@@ -1,4 +1,4 @@
-## EvalAI Starter
+## How to create a challenge on EvalAI?
 
 If you are looking for a simple challenge configuration that you can replicate to create a challenge on EvalAI, then you are at the right place. Follow the instructions given below to get started.
 
@@ -25,7 +25,7 @@ If you are looking for a simple challenge configuration that you can replicate t
     └── terms_and_conditions.html               # Contains terms and conditions related to the challenge
 ```
 
-### Steps involved
+## Steps involved
 
 1. Fork this repository.
 
@@ -35,6 +35,6 @@ If you are looking for a simple challenge configuration that you can replicate t
 
 4. Upload the `challenge_config.zip` on [EvalAI](https://evalai.cloudcv.org) to create a challenge on EvalAI. Challenge will be available publicly once EvalAI Admin approves the challenge. 
 
-### Facing problems in creating a challenge?
+## Facing problems in creating a challenge?
 
 Please feel free to open issues on our [Github Repository](https://github.com/Cloud-CV/EvalAI-Starter/issues) or contact us at team@cloudcv.org if you have issues.

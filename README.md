@@ -15,6 +15,7 @@ If you are looking for a simple challenge configuration that you can replicate t
 │   ├── __init__.py                             # Imports the modules that involve annotations loading etc
 │   └── main.py                                 # Contains the main `evaluate()` method
 ├── logo.jpg                                    # Logo image of the challenge
+├── blank.json                                  # Sample submission file
 ├── run.sh                                      # Script to create the challenge configuration zip to be uploaded on EvalAI website
 └── templates									# Contains challenge related HTML templates
     ├── challenge_phase_1_description.html      # Challenge Phase 1 description template

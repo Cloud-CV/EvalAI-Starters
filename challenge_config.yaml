@@ -34,7 +34,7 @@ challenge_phases:
     leaderboard_public: True
     is_public: True
     start_date: 2018-01-19 00:00:00
-    end_date: 2018-05-24 23:59:59
+    end_date: 2099-05-24 23:59:59
     test_annotation_file: annotations/test_annotations_testsplit.json
     codename: test
     max_submissions_per_day: 5

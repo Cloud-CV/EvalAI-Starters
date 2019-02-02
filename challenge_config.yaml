@@ -29,6 +29,7 @@ challenge_phases:
     codename: dev
     max_submissions_per_day: 5
     max_submissions: 50
+    monthly_submission_limit_per_team: 30
   - id: 2
     name: Test Phase
     description: templates/challenge_phase_2_description.html
@@ -40,6 +41,7 @@ challenge_phases:
     codename: test
     max_submissions_per_day: 5
     max_submissions: 50
+    monthly_submission_limit_per_team: 30
 
 dataset_splits:
   - id: 1

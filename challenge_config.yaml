@@ -9,7 +9,7 @@ image: logo.jpg
 submission_guidelines: templates/submission_guidelines.html
 evaluation_script: evaluation_script.zip
 remote_evaluation: False
-start_date: 2018-01-19 00:00:00
+start_date: 2019-01-01 00:00:00
 end_date: 2099-05-31 23:59:59
 published: True
 
@@ -23,22 +23,24 @@ challenge_phases:
     description: templates/challenge_phase_1_description.html
     leaderboard_public: False
     is_public: True
-    start_date: 2018-01-19 00:00:00
+    start_date: 2019-01-19 00:00:00
     end_date: 2099-04-25 23:59:59
     test_annotation_file: annotations/test_annotations_devsplit.json
     codename: dev
     max_submissions_per_day: 5
+    max_submissions_per_month: 50
     max_submissions: 50
   - id: 2
     name: Test Phase
     description: templates/challenge_phase_2_description.html
     leaderboard_public: True
     is_public: True
-    start_date: 2018-01-19 00:00:00
+    start_date: 2019-01-01 00:00:00
     end_date: 2099-05-24 23:59:59
     test_annotation_file: annotations/test_annotations_testsplit.json
     codename: test
     max_submissions_per_day: 5
+    max_submissions_per_month: 50
     max_submissions: 50
 
 dataset_splits:

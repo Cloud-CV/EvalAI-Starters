@@ -8,6 +8,6 @@ venv/
 # text-editor related files
 .vscode/
 
-# chache
+# cache
 __pycache__
 *.pyc

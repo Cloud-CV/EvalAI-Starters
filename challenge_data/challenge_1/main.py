@@ -20,24 +20,24 @@ def evaluate(test_annotation_file, user_submission_file, phase_codename, **kwarg
         Example: A sample submission metadata can be accessed like this:
         >>> print(kwargs['submission_metadata'])
         {
-            'status': u'running',
-            'when_made_public': None,
-            'participant_team': 5,
-            'input_file': 'https://abc.xyz/path/to/submission/file.json',
-            'execution_time': u'123',
-            'publication_url': u'ABC',
-            'challenge_phase': 1,
-            'created_by': u'ABC',
-            'stdout_file': 'https://abc.xyz/path/to/stdout/file.json',
-            'method_name': u'Test',
-            'stderr_file': 'https://abc.xyz/path/to/stderr/file.json',
-            'participant_team_name': u'Test Team',
-            'project_url': u'http://foo.bar',
-            'method_description': u'ABC',
-            'is_public': False,
-            'submission_result_file': 'https://abc.xyz/path/result/file.json',
-            'id': 123,
-            'submitted_at': u'2017-03-20T19:22:03.880652Z'
+            "status": u"running",
+            "when_made_public": None,
+            "participant_team": 5,
+            "input_file": "https://abc.xyz/path/to/submission/file.json",
+            "execution_time": u"123",
+            "publication_url": u"ABC",
+            "challenge_phase": 1,
+            "created_by": u"ABC",
+            "stdout_file": "https://abc.xyz/path/to/stdout/file.json",
+            "method_name": u"Test",
+            "stderr_file": "https://abc.xyz/path/to/stderr/file.json",
+            "participant_team_name": u"Test Team",
+            "project_url": u"http://foo.bar",
+            "method_description": u"ABC",
+            "is_public": False,
+            "submission_result_file": "https://abc.xyz/path/result/file.json",
+            "id": 123,
+            "submitted_at": u"2017-03-20T19:22:03.880652Z",
         }
     """
     print(kwargs["submission_metadata"])

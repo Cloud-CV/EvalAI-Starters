@@ -1,2 +1,13 @@
 challenge_config.zip
 evaluation_script.zip
+
+# virtualenv
+env/
+venv/
+
+# text-editor related files
+.vscode/
+
+# chache
+__pycache__
+*.pyc

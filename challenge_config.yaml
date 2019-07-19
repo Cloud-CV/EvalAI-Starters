@@ -23,7 +23,6 @@ challenge_phases:
     name: Dev Phase
     description: templates/challenge_phase_1_description.html
     leaderboard_public: False
-    leaderboard_order_is_descending: True
     is_public: True
     start_date: 2019-01-19 00:00:00
     end_date: 2099-04-25 23:59:59
@@ -36,7 +35,6 @@ challenge_phases:
     name: Test Phase
     description: templates/challenge_phase_2_description.html
     leaderboard_public: True
-    leaderboard_order_is_descending: True
     is_public: True
     start_date: 2019-01-01 00:00:00
     end_date: 2099-05-24 23:59:59
@@ -59,11 +57,14 @@ challenge_phase_splits:
     leaderboard_id: 1
     dataset_split_id: 1
     visibility: 1
+    leaderboard_order_is_descending: True
   - challenge_phase_id: 2
     leaderboard_id: 1
     dataset_split_id: 1
     visibility: 3
+    leaderboard_order_is_descending: True
   - challenge_phase_id: 2
     leaderboard_id: 1
     dataset_split_id: 2
     visibility: 1
+    leaderboard_order_is_descending: True

@@ -30,7 +30,7 @@ If you are looking for a simple challenge configuration that you can replicate t
 
 1. Fork this repository.
 
-2. Read [EvalAI challenge creation documentation](http://evalai.readthedocs.io/en/latest/challenge_creation.html#challenge-creation-using-zip-configuration) to know more about how you want to structure your challenge. Once you are ready, start making changes in the yaml file, HTML templates, evaluation script according to your need. 
+2. Read [EvalAI challenge creation documentation](https://evalai.readthedocs.io/en/latest/configuration.html) to know more about how you want to structure your challenge. Once you are ready, start making changes in the yaml file, HTML templates, evaluation script according to your need. 
 
 3. Once you are done making changes, run the command `./run.sh` to generate the `challenge_config.zip`
 

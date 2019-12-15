@@ -38,4 +38,4 @@ If you are looking for a simple challenge configuration that you can replicate t
 
 ## Facing problems in creating a challenge?
 
-Please feel free to open issues on our [Github Repository](https://github.com/Cloud-CV/EvalAI-Starter/issues) or contact us at team@cloudcv.org if you have issues.
+Please feel free to open issues on our [GitHub Repository](https://github.com/Cloud-CV/EvalAI-Starter/issues) or contact us at team@cloudcv.org if you have issues.

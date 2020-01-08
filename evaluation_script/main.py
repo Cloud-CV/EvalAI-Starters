@@ -3,7 +3,6 @@ import random
 
 def evaluate(test_annotation_file, user_submission_file, phase_codename, **kwargs):
     print("Starting Evaluation.....")
-    print("Submission related metadata:")
     """
     Evaluates the submission for a particular challenge phase adn returns score
     Arguments:
@@ -40,7 +39,6 @@ def evaluate(test_annotation_file, user_submission_file, phase_codename, **kwarg
             'submitted_at': u'2017-03-20T19:22:03.880652Z'
         }
     """
-    print(kwargs["submission_metadata"])
     output = {}
     if phase_codename == "dev":
         print("Evaluating for Dev Phase")

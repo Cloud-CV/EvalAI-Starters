@@ -46,7 +46,7 @@ challenge_phases:
         type: radio
         options: ["A", "B", "C"]
       - name: MultipleChoiceAttribute
-        description: "Sample"
+        description: Sample
         type: checkbox
         options: ["alpha", "beta", "gamma"]
       - name: TrueFalseField
@@ -74,7 +74,7 @@ challenge_phases:
         type: radio
         options: ["A", "B", "C"]
       - name: MultipleChoiceAttribute
-        description: "Sample"
+        description: Sample
         type: checkbox
         options: ["alpha", "beta", "gamma"]
       - name: TrueFalseField

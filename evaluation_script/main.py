@@ -4,7 +4,7 @@ import random
 def evaluate(test_annotation_file, user_submission_file, phase_codename, **kwargs):
     print("Starting Evaluation.....")
     """
-    Evaluates the submission for a particular challenge phase adn returns score
+    Evaluates the submission for a particular challenge phase and returns score
     Arguments:
 
         `test_annotations_file`: Path to test_annotation_file on the server

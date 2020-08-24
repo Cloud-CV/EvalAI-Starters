@@ -11,4 +11,4 @@ API_HOST_URL = "https://evalapi.cloudcv.org"
 IGNORE_DIRS = [".git", ".github", "github"]
 IGNORE_FILES = [".gitignore", "challenge_config.zip", "README.md", "run.sh", "submission.json"]
 CHALLENGE_ZIP_FILE_PATH = "challenge_config.zip"
-GITHUB_REPOSITORY = os.env.get("GITHUB_REPOSITORY")
+GITHUB_REPOSITORY = os.environ.get("GITHUB_REPOSITORY")

@@ -35,7 +35,7 @@ if __name__ == "__main__":
 		sys.exit(1)
 
 	# Fetching the url
-	if IS_VALIDATION:
+	if IS_VALIDATION=="True":
 		url = "{}{}".format(EVALAI_HOST_URL, CHALLENGE_CONFIG_VALIDATION_URL.format(CHALLENGE_HOST_TEAM_PK))
 	else:
 		url = "{}{}".format(EVALAI_HOST_URL, CHALLENGE_CREATE_OR_UPDATE_URL.format(CHALLENGE_HOST_TEAM_PK))
@@ -67,7 +67,7 @@ if __name__ == "__main__":
 			print("\nThere was an error: {}".format(err))
 			os.environ["CHALLENGE_ERRORS"] = str(err)
 	except Exception as e:
-		if IS_VALIDATION:
+		if IS_VALIDATION=="True":
 			print("\nThere was an error when validating the challenge config: {}".format(e))
 		else:
 			print("\nThere was an error: {}".format(e))
@@ -75,7 +75,7 @@ if __name__ == "__main__":
 	zip_file.close()
 	os.remove(zip_file.name)
 
-	if os.environ.get("CHALLENGE_ERRORS") != "False" and IS_VALIDATION:
+	if os.environ.get("CHALLENGE_ERRORS") != "False" and IS_VALIDATION=="True":
 		print("\nExiting the {} script after failure\n".format(os.path.basename(__file__)))
 		message = os.environ.get("CHALLENGE_ERRORS")
 		os.system('echo ::set-env name=TEST_VAR::{}'.format(message))

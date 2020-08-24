@@ -26,7 +26,7 @@ jobs:
       run: |
         python3 github/challenge_processing_script.py
       env:
-        IS_VALIDATION: True
+        IS_VALIDATION: "True"
     - name: Comment PR
       uses: thollander/actions-comment-pull-request@master
       with:
@@ -36,4 +36,4 @@ jobs:
       run: |
         python3 github/challenge_processing_script.py
       env:
-        IS_VALIDATION: False
+        IS_VALIDATION: "False"

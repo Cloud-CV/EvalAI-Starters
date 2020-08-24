@@ -31,6 +31,7 @@ if __name__ == "__main__":
 		HOST_AUTH_TOKEN = res[0]
 		CHALLENGE_HOST_TEAM_PK = res[1]
 		EVALAI_HOST_URL = res[2]
+		print("{} ; {} ; {}".format(HOST_AUTH_TOKEN, CHALLENGE_HOST_TEAM_PK, EVALAI_HOST_URL))
 	else:
 		sys.exit(1)
 
@@ -39,18 +40,21 @@ if __name__ == "__main__":
 		url = "{}{}".format(EVALAI_HOST_URL, CHALLENGE_CONFIG_VALIDATION_URL.format(CHALLENGE_HOST_TEAM_PK))
 	else:
 		url = "{}{}".format(EVALAI_HOST_URL, CHALLENGE_CREATE_OR_UPDATE_URL.format(CHALLENGE_HOST_TEAM_PK))
+	print()
 
 	headers = get_request_header(HOST_AUTH_TOKEN)
-
+	print("headers is {}".format(headers))
 	# Creating the challenge zip file and storing in a dict to send to EvalAI
 	construct_challenge_zip_file(CHALLENGE_ZIP_FILE_PATH, IGNORE_DIRS, IGNORE_FILES)
 	zip_file = open(CHALLENGE_ZIP_FILE_PATH, 'rb')
 	file = {"zip_configuration": zip_file}
-	data = {"GITHUB_REPOSITORY": GITHUB_REPOSITORY}
+	print("file is {}".format(file))
+	data = {"GITHUB_REPOSITORY": GITHUB_REPOSITORY} 
+	print("data is {}".format(data))
 
 	try:
 		response = requests.post(url, data=data, headers=headers, files=file)
-		# import pdb; pdb.set_trace()
+
 		if response.status_code != http.HTTPStatus.OK and response.status_code != http.HTTPStatus.CREATED:
 			response.raise_for_status()
 		else:
@@ -68,9 +72,13 @@ if __name__ == "__main__":
 			os.environ["CHALLENGE_ERRORS"] = str(err)
 	except Exception as e:
 		if IS_VALIDATION=="True":
-			print("\nThere was an error when validating the challenge config: {}".format(e))
+			error_message = "\nThere was an error when validating the challenge config: {}".format(e)
+			print(error_message)
+			os.environ["CHALLENGE_ERRORS"] = error_message
 		else:
-			print("\nThere was an error: {}".format(e))
+			error_message = "\nThere was an error: {}".format(e)
+			print(error_message)
+			os.environ["CHALLENGE_ERRORS"] = error_message
 
 	zip_file.close()
 	os.remove(zip_file.name)

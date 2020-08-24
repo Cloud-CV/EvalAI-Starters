@@ -1,5 +1,8 @@
 # Common config variables in both scripts
 
+import os
+
+
 HOST_CONFIG_FILE_PATH = "host_config.json"
 CHALLENGE_CONFIG_VALIDATION_URL = "/api/challenges/challenge/challenge_host_team/{}/validate_challenge_config/"
 CHALLENGE_CREATE_OR_UPDATE_URL = "/api/challenges/challenge/challenge_host_team/{}/create_or_update_github_challenge/"

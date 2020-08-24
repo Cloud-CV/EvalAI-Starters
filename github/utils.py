@@ -8,7 +8,7 @@ def construct_challenge_zip_file(challenge_zip_file_path, ignore_dirs, ignore_fi
     """
     Constructs the challenge zip file at a given path
     """
-    working_dir = os.path.dirname(os.getcwd())
+    working_dir = os.getcwd() # Special case for github. For local. use os.path.dirname(os.getcwd())
     zipf = zipfile.ZipFile(challenge_zip_file_path, "w", zipfile.ZIP_DEFLATED)
     for root, dirs, files in os.walk(working_dir):
         parents = root.split('/')

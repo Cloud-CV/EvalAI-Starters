@@ -33,6 +33,7 @@ def load_host_configs(config_path):
     """
     Loads token to be used for sending requests
     """
+    config_path = "{}/{}".format(os.getcwd(), config_path)
     print(">>>>>>>>>>> Host config path is: {}".format(config_path))
     if os.path.exists(config_path):
         with open(config_path, "r") as f:
@@ -48,7 +49,7 @@ def load_host_configs(config_path):
         evalai_host_url = data["evalai_host_url"]
         return [host_auth_token, challenge_host_team_pk, evalai_host_url]
     else:
-        erro_message = "\nThe host config json file is not present. Please include an auth token, team_pk & evalai_host_url in it: {}".format(config_path)
+        error_message = "\nThe host config json file is not present. Please include an auth token, team_pk & evalai_host_url in it: {}".format(config_path)
         print(error_message)
         os.environ["CHALLENGE_ERRORS"] = error_message
         return False

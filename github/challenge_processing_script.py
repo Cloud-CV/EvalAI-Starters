@@ -40,7 +40,7 @@ if __name__ == "__main__":
 		url = "{}{}".format(EVALAI_HOST_URL, CHALLENGE_CONFIG_VALIDATION_URL.format(CHALLENGE_HOST_TEAM_PK))
 	else:
 		url = "{}{}".format(EVALAI_HOST_URL, CHALLENGE_CREATE_OR_UPDATE_URL.format(CHALLENGE_HOST_TEAM_PK))
-	print()
+	print("url is {}".format(url))
 
 	headers = get_request_header(HOST_AUTH_TOKEN)
 	print("headers is {}".format(headers))

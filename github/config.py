@@ -3,7 +3,7 @@
 import os
 
 
-HOST_CONFIG_FILE_PATH = "host_config.json"
+HOST_CONFIG_FILE_PATH = "github/host_config.json"
 CHALLENGE_CONFIG_VALIDATION_URL = "/api/challenges/challenge/challenge_host_team/{}/validate_challenge_config/"
 CHALLENGE_CREATE_OR_UPDATE_URL = "/api/challenges/challenge/challenge_host_team/{}/create_or_update_github_challenge/"
 EVALAI_ERROR_CODES = [400, 401, 406]

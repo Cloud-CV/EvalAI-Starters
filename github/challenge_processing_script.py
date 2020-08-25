@@ -2,7 +2,7 @@ import os
 import requests
 import sys
 import http
-import octokitpy
+import octokit
 
 from config import *
 from utils import (

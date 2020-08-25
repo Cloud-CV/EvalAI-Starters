@@ -1,8 +1,9 @@
+import http
+import json
+import octokit
 import os
 import requests
 import sys
-import http
-import octokit
 
 from config import *
 from utils import (
@@ -23,10 +24,9 @@ os.environ["CHALLENGE_ERRORS"] = "False"
 IS_VALIDATION = os.getenv("IS_VALIDATION")
 GITHUB_EVENT_NAME = os.getenv("GITHUB_EVENT_NAME")
 
-GITHUB_CONTEXT = os.getenv("GITHUB_CONTEXT")
+GITHUB_CONTEXT = json.loads(os.getenv("GITHUB_CONTEXT"))
 GITHUB_AUTH_TOKEN = os.getenv("GITHUB_AUTH_TOKEN")
 
-print("type of GITHUB_CONTEXT is {}".format(type(GITHUB_CONTEXT)))
 print(">>>>>> {}".format(GITHUB_CONTEXT))
 print(">>>>>> {}".format(GITHUB_AUTH_TOKEN))
 

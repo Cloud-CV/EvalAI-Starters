@@ -2,6 +2,7 @@ import os
 import requests
 import sys
 import http
+import octokitpy
 
 from config import *
 from utils import (
@@ -22,7 +23,12 @@ os.environ["CHALLENGE_ERRORS"] = "False"
 IS_VALIDATION = os.getenv("IS_VALIDATION")
 GITHUB_EVENT_NAME = os.getenv("GITHUB_EVENT_NAME")
 
-print(os.getenv("GITHUB_CONTEXT"))
+GITHUB_CONTEXT = os.getenv("GITHUB_CONTEXT")
+GITHUB_AUTH_TOKEN = os.getenv("GITHUB_AUTH_TOKEN")
+
+print("type of GITHUB_CONTEXT is {}".format(GITHUB_CONTEXT))
+print(">>>>>> {}".format(GITHUB_CONTEXT))
+print(">>>>>> {}".format(GITHUB_AUTH_TOKEN))
 
 if __name__ == "__main__":
 	'''

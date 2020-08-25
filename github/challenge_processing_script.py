@@ -25,7 +25,9 @@ IS_VALIDATION = os.environ.get("IS_VALIDATION")
 if __name__ == "__main__":
 
 	print("\nInside the {}".format(os.path.basename(__file__)))
-
+	
+	print(">>>>>>>>>>>>>>>GITHUB_EVENT_NAME: {}".format(os.getenv(GITHUB_EVENT_NAME)))
+	'''
 	res = load_host_configs(HOST_CONFIG_FILE_PATH)
 	if res:
 		HOST_AUTH_TOKEN = res[0]
@@ -90,4 +92,4 @@ if __name__ == "__main__":
 		sys.exit(1)
 
 	print("\nExiting the {} script after success\n".format(os.path.basename(__file__)))
-
+	'''

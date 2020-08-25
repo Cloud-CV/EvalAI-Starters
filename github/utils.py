@@ -9,6 +9,19 @@ def construct_challenge_zip_file(challenge_zip_file_path, ignore_dirs, ignore_fi
     Constructs the challenge zip file at a given path
     """
     working_dir = os.getcwd() # Special case for github. For local. use os.path.dirname(os.getcwd())
+    
+    # Creating evaluation_script.zip file
+    eval_script_dir = working_dir + "/evaluation_script"
+    eval_script_zip = zipfile.ZipFile("evaluation_script.zip", "w", zipfile.ZIP_DEFLATED)
+    for root, dirs, files in os.walk(eval_script_dir):
+        for file in files:
+            file_name = os.path.join(root, file)
+            name_in_zip_file = file_name[len(eval_script_dir)+1:] if file_name.startswith(eval_script_dir) else file_name
+            print(">>>>>> Eval script zipping --- Inside zipfile: {}".format(name_in_zip_file))
+            eval_script_zip.write(file_name, name_in_zip_file)
+    eval_script_zip.close()
+
+    # Creating the challenge_config.zip file
     zipf = zipfile.ZipFile(challenge_zip_file_path, "w", zipfile.ZIP_DEFLATED)
     for root, dirs, files in os.walk(working_dir):
         parents = root.split('/')
@@ -17,7 +30,7 @@ def construct_challenge_zip_file(challenge_zip_file_path, ignore_dirs, ignore_fi
                 if file not in ignore_files:
                     file_name = os.path.join(root, file)
                     name_in_zip_file = file_name[len(working_dir)+1:] if file_name.startswith(working_dir) else file_name
-                    print("Inside zipfile: {}".format(name_in_zip_file))
+                    print(">>>>>> Challenge zipping Inside zipfile: {}".format(name_in_zip_file))
                     zipf.write(file_name, name_in_zip_file)
     zipf.close()
 

@@ -24,7 +24,8 @@ GITHUB_EVENT_NAME = os.getenv("GITHUB_EVENT_NAME")
 
 if __name__ == "__main__":
 
-	print("\nInside the {}".format(os.path.basename(__file__)))
+	if IS_VALIDATION == "False" and GITHUB_EVENT_NAME == "pull_request":
+		sys.exit(0)
 
 	res = load_host_configs(HOST_CONFIG_FILE_PATH)
 	if res:
@@ -42,7 +43,6 @@ if __name__ == "__main__":
 	if IS_VALIDATION == "False" and GITHUB_EVENT_NAME == "push":
 		url = "{}{}".format(EVALAI_HOST_URL, CHALLENGE_CREATE_OR_UPDATE_URL.format(CHALLENGE_HOST_TEAM_PK))
 		print(">>>>>>>> CREATION/UPDATION url to {}".format(url))
-	print(">>>>>> url is {}".format(url))
 
 	headers = get_request_header(HOST_AUTH_TOKEN)
 	print("headers is {}".format(headers))

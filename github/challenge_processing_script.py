@@ -27,7 +27,7 @@ GITHUB_EVENT_NAME = os.getenv("GITHUB_EVENT_NAME")
 GITHUB_CONTEXT = json.loads(os.getenv("GITHUB_CONTEXT"))
 GITHUB_AUTH_TOKEN = os.getenv("GITHUB_AUTH_TOKEN")
 
-print(">>>>>> {}".format(GITHUB_CONTEXT))
+print(">>>>>> {}".format(os.getenv("GITHUB_CONTEXT")))
 print(">>>>>> {}".format(GITHUB_AUTH_TOKEN))
 
 if __name__ == "__main__":

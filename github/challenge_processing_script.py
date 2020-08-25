@@ -22,8 +22,10 @@ os.environ["CHALLENGE_ERRORS"] = "False"
 IS_VALIDATION = os.getenv("IS_VALIDATION")
 GITHUB_EVENT_NAME = os.getenv("GITHUB_EVENT_NAME")
 
-if __name__ == "__main__":
+print(os.getenv("GITHUB_CONTEXT"))
 
+if __name__ == "__main__":
+	'''
 	if IS_VALIDATION == "False" and GITHUB_EVENT_NAME == "pull_request":
 		sys.exit(0)
 
@@ -92,4 +94,4 @@ if __name__ == "__main__":
 		sys.exit(1)
 
 	print("\nExiting the {} script after success\n".format(os.path.basename(__file__)))
-
+	'''

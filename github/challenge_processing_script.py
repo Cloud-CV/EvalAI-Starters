@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
 	print("\nInside the {}".format(os.path.basename(__file__)))
 	
-	print(">>>>>>>>>>>>>>>GITHUB_EVENT_NAME: {}".format(os.getenv(GITHUB_EVENT_NAME)))
+	print(">>>>>>>>>>>>>>>GITHUB_EVENT_NAME: {}".format(os.getenv("GITHUB_EVENT_NAME")))
 	'''
 	res = load_host_configs(HOST_CONFIG_FILE_PATH)
 	if res:

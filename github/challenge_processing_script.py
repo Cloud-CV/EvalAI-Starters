@@ -36,12 +36,13 @@ if __name__ == "__main__":
 		sys.exit(1)
 
 	# Fetching the url
-	url = None
 	if IS_VALIDATION is "True":
 		url = "{}{}".format(EVALAI_HOST_URL, CHALLENGE_CONFIG_VALIDATION_URL.format(CHALLENGE_HOST_TEAM_PK))
+		print(">>>>>>>> VALIDATION url to {}".format(url))
 	if IS_VALIDATION is "False" and GITHUB_EVENT_NAME is "push":
 		url = "{}{}".format(EVALAI_HOST_URL, CHALLENGE_CREATE_OR_UPDATE_URL.format(CHALLENGE_HOST_TEAM_PK))
-	print("url is {}".format(url))
+		print(">>>>>>>> CREATION/UPDATION url to {}".format(url))
+	print(">>>>>> url is {}".format(url))
 
 	headers = get_request_header(HOST_AUTH_TOKEN)
 	print("headers is {}".format(headers))

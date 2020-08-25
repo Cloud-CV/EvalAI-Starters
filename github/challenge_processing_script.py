@@ -26,7 +26,7 @@ GITHUB_EVENT_NAME = os.getenv("GITHUB_EVENT_NAME")
 GITHUB_CONTEXT = os.getenv("GITHUB_CONTEXT")
 GITHUB_AUTH_TOKEN = os.getenv("GITHUB_AUTH_TOKEN")
 
-print("type of GITHUB_CONTEXT is {}".format(GITHUB_CONTEXT))
+print("type of GITHUB_CONTEXT is {}".format(type(GITHUB_CONTEXT)))
 print(">>>>>> {}".format(GITHUB_CONTEXT))
 print(">>>>>> {}".format(GITHUB_AUTH_TOKEN))
 

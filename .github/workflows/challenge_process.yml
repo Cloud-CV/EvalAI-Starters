@@ -27,12 +27,6 @@ jobs:
         python3 github/challenge_processing_script.py
       env:
         IS_VALIDATION: "True"
-    - name: Comment PR
-      uses: thollander/actions-comment-pull-request@master
-      if: ${{github.event=='pull_request'}}
-      with:
-        message: ${{env.CHALLENGE_ERRORS}}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: Create or update challenge
       run: |
         python3 github/challenge_processing_script.py

@@ -28,6 +28,7 @@ jobs:
       env:
         IS_VALIDATION: "True"
         GITHUB_CONTEXT: ${{ toJson(github) }}
+        GITHUB_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: Create or update challenge
       run: |
         python3 github/challenge_processing_script.py

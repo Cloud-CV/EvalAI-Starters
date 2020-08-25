@@ -39,7 +39,7 @@ if __name__ == "__main__":
 	url = None
 	if IS_VALIDATION is "True":
 		url = "{}{}".format(EVALAI_HOST_URL, CHALLENGE_CONFIG_VALIDATION_URL.format(CHALLENGE_HOST_TEAM_PK))
-	if IS_VALIDATION is "False" and GITHUB_EVENT_NAME is "pull_request":
+	if IS_VALIDATION is "False" and GITHUB_EVENT_NAME is "push":
 		url = "{}{}".format(EVALAI_HOST_URL, CHALLENGE_CREATE_OR_UPDATE_URL.format(CHALLENGE_HOST_TEAM_PK))
 	print("url is {}".format(url))
 

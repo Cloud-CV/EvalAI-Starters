@@ -19,15 +19,13 @@ EVALAI_HOST_URL = None
 
 os.environ["CHALLENGE_ERRORS"] = "False"
 
-IS_VALIDATION = os.environ.get("IS_VALIDATION")
-
+IS_VALIDATION = os.getenv("IS_VALIDATION")
+GITHUB_EVENT_NAME = os.getenv("GITHUB_EVENT_NAME")
 
 if __name__ == "__main__":
 
 	print("\nInside the {}".format(os.path.basename(__file__)))
-	
-	print(">>>>>>>>>>>>>>>GITHUB_EVENT_NAME: {}".format(os.getenv("GITHUB_EVENT_NAME")))
-	'''
+
 	res = load_host_configs(HOST_CONFIG_FILE_PATH)
 	if res:
 		HOST_AUTH_TOKEN = res[0]
@@ -38,9 +36,10 @@ if __name__ == "__main__":
 		sys.exit(1)
 
 	# Fetching the url
-	if IS_VALIDATION=="True":
+	url = None
+	if IS_VALIDATION is "True":
 		url = "{}{}".format(EVALAI_HOST_URL, CHALLENGE_CONFIG_VALIDATION_URL.format(CHALLENGE_HOST_TEAM_PK))
-	else:
+	if IS_VALIDATION is "False" and GITHUB_EVENT_NAME is "pull_request":
 		url = "{}{}".format(EVALAI_HOST_URL, CHALLENGE_CREATE_OR_UPDATE_URL.format(CHALLENGE_HOST_TEAM_PK))
 	print("url is {}".format(url))
 
@@ -92,4 +91,4 @@ if __name__ == "__main__":
 		sys.exit(1)
 
 	print("\nExiting the {} script after success\n".format(os.path.basename(__file__)))
-	'''
+

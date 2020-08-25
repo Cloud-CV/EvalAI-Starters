@@ -25,6 +25,7 @@ jobs:
     - name: Validate challenge
       run: |
         python3 github/challenge_processing_script.py
+        GITHUB_CONTEXT: ${{ toJson(github) }}
       env:
         IS_VALIDATION: "True"
     - name: Create or update challenge

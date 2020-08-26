@@ -7,6 +7,8 @@ import sys
 
 from config import *
 from utils import (
+	create_issue_in_repo,
+	comment_on_pr,
 	construct_challenge_zip_file,
 	get_request_header,
 	load_host_configs,
@@ -27,11 +29,11 @@ GITHUB_EVENT_NAME = os.getenv("GITHUB_EVENT_NAME")
 GITHUB_CONTEXT = json.loads(os.getenv("GITHUB_CONTEXT"))
 GITHUB_AUTH_TOKEN = os.getenv("GITHUB_AUTH_TOKEN")
 
-print(">>>>>> {}".format(os.getenv("GITHUB_CONTEXT")))
-print(">>>>>> {}".format(GITHUB_AUTH_TOKEN))
+if GITHUB_EVENT_NAME == "pull_request":
+	PR_NUMBER = GITHUB_CONTEXT["event"]["number"]
 
 if __name__ == "__main__":
-	'''
+
 	if IS_VALIDATION == "False" and GITHUB_EVENT_NAME == "pull_request":
 		sys.exit(0)
 
@@ -47,20 +49,17 @@ if __name__ == "__main__":
 	# Fetching the url
 	if IS_VALIDATION == "True":
 		url = "{}{}".format(EVALAI_HOST_URL, CHALLENGE_CONFIG_VALIDATION_URL.format(CHALLENGE_HOST_TEAM_PK))
-		print(">>>>>>>> VALIDATION url to {}".format(url))
 	if IS_VALIDATION == "False" and GITHUB_EVENT_NAME == "push":
 		url = "{}{}".format(EVALAI_HOST_URL, CHALLENGE_CREATE_OR_UPDATE_URL.format(CHALLENGE_HOST_TEAM_PK))
-		print(">>>>>>>> CREATION/UPDATION url to {}".format(url))
 
 	headers = get_request_header(HOST_AUTH_TOKEN)
-	print("headers is {}".format(headers))
+
 	# Creating the challenge zip file and storing in a dict to send to EvalAI
 	construct_challenge_zip_file(CHALLENGE_ZIP_FILE_PATH, IGNORE_DIRS, IGNORE_FILES)
 	zip_file = open(CHALLENGE_ZIP_FILE_PATH, 'rb')
 	file = {"zip_configuration": zip_file}
-	print("file is {}".format(file))
+
 	data = {"GITHUB_REPOSITORY": GITHUB_REPOSITORY} 
-	print("data is {}".format(data))
 
 	try:
 		response = requests.post(url, data=data, headers=headers, files=file)
@@ -93,11 +92,17 @@ if __name__ == "__main__":
 	zip_file.close()
 	os.remove(zip_file.name)
 
-	if os.environ.get("CHALLENGE_ERRORS") != "False" and IS_VALIDATION=="True":
-		print("\nExiting the {} script after failure\n".format(os.path.basename(__file__)))
+	if os.environ.get("CHALLENGE_ERRORS") != "False" and IS_VALIDATION=="True" and GITHUB_EVENT_NAME == "pull_request":
 		message = os.environ.get("CHALLENGE_ERRORS")
-		os.system('echo ::set-env name=TEST_VAR::{}'.format(message))
+		comment_on_pr(GITHUB_AUTH_TOKEN, os.path.basename(GITHUB_REPOSITORY), PR_NUMBER)
+		print("\nExiting the {} script after failure\n".format(os.path.basename(__file__)))
+		sys.exit(1)
+	elif os.environ.get("CHALLENGE_ERRORS") != "False" and GITHUB_EVENT_NAME == "push":
+		issue_title = "Errors are found in your repository after commit."
+		issue_body = os.environ.get("CHALLENGE_ERRORS")
+		create_issue_in_repo(GITHUB_AUTH_TOKEN, os.path.basename(GITHUB_REPOSITORY), issue_title, issue_body)
+		print("\nExiting the {} script after failure\n".format(os.path.basename(__file__)))
 		sys.exit(1)
 
 	print("\nExiting the {} script after success\n".format(os.path.basename(__file__)))
-	'''
+

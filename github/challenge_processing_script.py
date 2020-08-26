@@ -29,12 +29,12 @@ GITHUB_EVENT_NAME = os.getenv("GITHUB_EVENT_NAME")
 GITHUB_CONTEXT = json.loads(os.getenv("GITHUB_CONTEXT"))
 GITHUB_AUTH_TOKEN = os.getenv("GITHUB_AUTH_TOKEN")
 
-if GITHUB_EVENT_NAME == "pull_request":
+if GITHUB_EVENT_NAME == "pull_request_target":
 	PR_NUMBER = GITHUB_CONTEXT["event"]["number"]
 
 if __name__ == "__main__":
 
-	if IS_VALIDATION == "False" and GITHUB_EVENT_NAME == "pull_request":
+	if IS_VALIDATION == "False" and GITHUB_EVENT_NAME == "pull_request_target":
 		sys.exit(0)
 
 	res = load_host_configs(HOST_CONFIG_FILE_PATH)
@@ -92,7 +92,7 @@ if __name__ == "__main__":
 	zip_file.close()
 	os.remove(zip_file.name)
 
-	if os.environ.get("CHALLENGE_ERRORS") != "False" and IS_VALIDATION=="True" and GITHUB_EVENT_NAME == "pull_request":
+	if os.environ.get("CHALLENGE_ERRORS") != "False" and IS_VALIDATION=="True" and GITHUB_EVENT_NAME == "pull_request_target":
 		message = os.environ.get("CHALLENGE_ERRORS")
 		comment_on_pr(GITHUB_AUTH_TOKEN, os.path.basename(GITHUB_REPOSITORY), PR_NUMBER)
 		print("\nExiting the {} script after failure\n".format(os.path.basename(__file__)))

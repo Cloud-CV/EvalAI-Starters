@@ -94,7 +94,7 @@ if __name__ == "__main__":
 
 	if os.environ.get("CHALLENGE_ERRORS") != "False" and IS_VALIDATION=="True" and GITHUB_EVENT_NAME == "pull_request_target":
 		message = os.environ.get("CHALLENGE_ERRORS")
-		comment_on_pr(GITHUB_AUTH_TOKEN, os.path.basename(GITHUB_REPOSITORY), PR_NUMBER)
+		comment_on_pr(GITHUB_AUTH_TOKEN, os.path.basename(GITHUB_REPOSITORY), PR_NUMBER, message)
 		print("\nExiting the {} script after failure\n".format(os.path.basename(__file__)))
 		sys.exit(1)
 	elif os.environ.get("CHALLENGE_ERRORS") != "False" and GITHUB_EVENT_NAME == "push":

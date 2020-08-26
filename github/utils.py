@@ -38,7 +38,6 @@ def construct_challenge_zip_file(challenge_zip_file_path, ignore_dirs, ignore_fi
         for file in files:
             file_name = os.path.join(root, file)
             name_in_zip_file = file_name[len(eval_script_dir)+1:] if file_name.startswith(eval_script_dir) else file_name
-            print(">>>>>> Eval script zipping --- Inside zipfile: {}".format(name_in_zip_file))
             eval_script_zip.write(file_name, name_in_zip_file)
     eval_script_zip.close()
 
@@ -69,14 +68,12 @@ def load_host_configs(config_path):
     Loads token to be used for sending requests
     """
     config_path = "{}/{}".format(os.getcwd(), config_path)
-    print(">>>>>>>>>>> Host config path is: {}".format(config_path))
     if os.path.exists(config_path):
         with open(config_path, "r") as f:
             try:
                 data = f.read()
             except (OSError, IOError) as e:
-                print("\nAn error occured while loading the host configs.")
-                print(e)
+                print("\nAn error occured while loading the host configs: {}".format(e))
                 sys.exit(1)
         data = json.loads(data)
         host_auth_token = data["token"]

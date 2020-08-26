@@ -3,6 +3,27 @@ import os
 import sys
 import zipfile
 
+from github import Github
+
+
+def comment_on_pr(github_auth_token, repo_name, pr_number, message):
+    try:
+        client = Github(github_auth_token)
+        repo = client.get_user().get_repo(repo_name)
+        pull = repo.get_pull(pull_request_number)
+        pull.create_issue_comment(message)
+    except Exception as e:
+        print("There was an error while commenting on the Pull request: {}".format(e))
+
+
+def create_issue_in_repo(github_auth_token, repo_name, issue_title, issue_body):
+    try:
+        client = Github(github_auth_token)
+        repo = client.get_user().get_repo(repo_name)
+        issue = repo.create_issue(issue_title, issue_body)
+    except Exception as e:
+        print("There was an error while creating an issue: {}".format(e))
+
 
 def construct_challenge_zip_file(challenge_zip_file_path, ignore_dirs, ignore_files):
     """
@@ -67,6 +88,7 @@ def load_host_configs(config_path):
         print(error_message)
         os.environ["CHALLENGE_ERRORS"] = error_message
         return False
+
 
 def validate_token(response):
     """

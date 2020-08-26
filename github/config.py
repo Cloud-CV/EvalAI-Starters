@@ -1,5 +1,4 @@
 # Common config variables in both scripts
-
 import os
 
 

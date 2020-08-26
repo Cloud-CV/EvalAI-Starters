@@ -37,6 +37,23 @@ challenge_phases:
     max_submissions_per_day: 5
     max_submissions_per_month: 50
     max_submissions: 50
+    submission_meta_attributes:
+      - name: TextAttribute
+        description: Sample
+        type: text
+      - name: SingleOptionAttribute
+        description: Sample
+        type: radio
+        options: ["A", "B", "C"]
+      - name: MultipleChoiceAttribute
+        description: Sample
+        type: checkbox
+        options: ["alpha", "beta", "gamma"]
+      - name: TrueFalseField
+        description: Sample
+        type: boolean
+    is_restricted_to_select_one_submission: False
+    is_partial_submission_evaluation_enabled: False
   - id: 2
     name: Test Phase
     description: templates/challenge_phase_2_description.html
@@ -50,6 +67,23 @@ challenge_phases:
     max_submissions_per_day: 5
     max_submissions_per_month: 50
     max_submissions: 50
+    submission_meta_attributes:
+      - name: TextAttribute
+        description: Sample
+        type: text
+      - name: SingleOptionAttribute
+        description: Sample
+        type: radio
+        options: ["A", "B", "C"]
+      - name: MultipleChoiceAttribute
+        description: Sample
+        type: checkbox
+        options: ["alpha", "beta", "gamma"]
+      - name: TrueFalseField
+        description: Sample
+        type: boolean
+    is_restricted_to_select_one_submission: False
+    is_partial_submission_evaluation_enabled: False
 
 dataset_splits:
   - id: 1

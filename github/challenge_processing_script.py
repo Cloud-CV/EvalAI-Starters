@@ -1,6 +1,5 @@
 import http
 import json
-import octokit
 import os
 import requests
 import sys
@@ -27,7 +26,7 @@ IS_VALIDATION = os.getenv("IS_VALIDATION")
 GITHUB_EVENT_NAME = os.getenv("GITHUB_EVENT_NAME")
 
 GITHUB_CONTEXT = json.loads(os.getenv("GITHUB_CONTEXT"))
-GITHUB_AUTH_TOKEN = "44e5936aa7767a31fb84bc314027e1121f6a6a9c" # os.getenv("GITHUB_AUTH_TOKEN")
+GITHUB_AUTH_TOKEN = os.getenv("GITHUB_AUTH_TOKEN")
 
 if GITHUB_EVENT_NAME.startswith("pull_request"):
 	PR_NUMBER = GITHUB_CONTEXT["event"]["number"]
@@ -37,12 +36,11 @@ if __name__ == "__main__":
 	if IS_VALIDATION == "False" and GITHUB_EVENT_NAME.startswith("pull_request"):
 		sys.exit(0)
 
-	res = load_host_configs(HOST_CONFIG_FILE_PATH)
-	if res:
-		HOST_AUTH_TOKEN = res[0]
-		CHALLENGE_HOST_TEAM_PK = res[1]
-		EVALAI_HOST_URL = res[2]
-		print("{} ; {} ; {}".format(HOST_AUTH_TOKEN, CHALLENGE_HOST_TEAM_PK, EVALAI_HOST_URL))
+	configs = load_host_configs(HOST_CONFIG_FILE_PATH)
+	if configs:
+		HOST_AUTH_TOKEN = configs[0]
+		CHALLENGE_HOST_TEAM_PK = configs[1]
+		EVALAI_HOST_URL = configs[2]
 	else:
 		sys.exit(1)
 

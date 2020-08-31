@@ -4,7 +4,7 @@
 name: Process Challenge config
 on:
   push:
-    branches: [ FinalTestBranch ]
+    branches: [ Challenge ]
   pull_request:
     types: [ opened, synchronize, reopened, edited ]
     branches:

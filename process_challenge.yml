@@ -7,7 +7,8 @@ on:
     branches: [ Challenge ]
   pull_request:
     types: [ opened, synchronize, reopened, edited ]
-    branches: [ Challenge ]
+    branches:
+      - '*'
 jobs:
   build:
     runs-on: ubuntu-latest

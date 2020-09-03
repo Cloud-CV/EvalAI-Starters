@@ -72,7 +72,7 @@ if __name__ == "__main__":
 				print(error_message)
 				os.environ["CHALLENGE_ERRORS"] = error_message
 		else:
-			print("\nThere was an error: {}".format(err))
+			print("\nFollowing errors occurred while validating the challenge config: {}".format(err))
 			os.environ["CHALLENGE_ERRORS"] = str(err)
 	except Exception as e:
 		if VALIDATION_STEP=="True":

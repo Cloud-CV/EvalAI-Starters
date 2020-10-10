@@ -41,6 +41,7 @@ challenge_phases:
       - name: TextAttribute
         description: Sample
         type: text
+        required: False
       - name: SingleOptionAttribute
         description: Sample
         type: radio
@@ -52,6 +53,7 @@ challenge_phases:
       - name: TrueFalseField
         description: Sample
         type: boolean
+        required: True
     is_restricted_to_select_one_submission: False
     is_partial_submission_evaluation_enabled: False
   - id: 2

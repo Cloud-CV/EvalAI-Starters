@@ -37,6 +37,15 @@ challenge_phases:
     max_submissions_per_day: 5
     max_submissions_per_month: 50
     max_submissions: 50
+    default_submission_meta_attributes:
+      - name: method_name
+        visible: True
+      - name: method_description
+        visible: True
+      - name: project_url
+        visible: True
+      - name: publication_url
+        visible: True
     submission_meta_attributes:
       - name: TextAttribute
         description: Sample

@@ -39,13 +39,13 @@ challenge_phases:
     max_submissions: 50
     default_submission_meta_attributes:
       - name: method_name
-        visible: True
+        is_visible: True
       - name: method_description
-        visible: True
+        is_visible: True
       - name: project_url
-        visible: True
+        is_visible: True
       - name: publication_url
-        visible: True
+        is_visible: False
     submission_meta_attributes:
       - name: TextAttribute
         description: Sample
@@ -80,13 +80,13 @@ challenge_phases:
     max_submissions: 50
     default_submission_meta_attributes:
       - name: method_name
-        visible: True
+        is_visible: True
       - name: method_description
-        visible: True
+        is_visible: True
       - name: project_url
-        visible: True
+        is_visible: True
       - name: publication_url
-        visible: True
+        is_visible: True
     submission_meta_attributes:
       - name: TextAttribute
         description: Sample

@@ -65,6 +65,7 @@ challenge_phases:
         required: True
     is_restricted_to_select_one_submission: False
     is_partial_submission_evaluation_enabled: False
+    allowed_submission_file_types: ".json, .zip, .txt, .tsv, .gz, .csv, .h5, .npy, .npz"
   - id: 2
     name: Test Phase
     description: templates/challenge_phase_2_description.html

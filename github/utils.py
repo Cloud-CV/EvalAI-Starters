@@ -24,6 +24,7 @@ def check_if_pull_request():
         return True
     return False
 
+
 def check_if_merge_or_commit():
     """
     Returns True if the workflow triggering event is either a merge or a direct commit
@@ -31,6 +32,7 @@ def check_if_merge_or_commit():
     if GITHUB_EVENT_NAME == "push":
         return True
     return False
+
 
 def add_pull_request_comment(github_auth_token, repo_name, pr_number, comment_body):
     """
@@ -50,7 +52,9 @@ def add_pull_request_comment(github_auth_token, repo_name, pr_number, comment_bo
         print("There was an error while commenting on the Pull request: {}".format(e))
 
 
-def create_github_repository_issue(github_auth_token, repo_name, issue_title, issue_body):
+def create_github_repository_issue(
+    github_auth_token, repo_name, issue_title, issue_body
+):
     """
     Creates an issue in a given repository
     
@@ -77,27 +81,39 @@ def create_challenge_zip_file(challenge_zip_file_path, ignore_dirs, ignore_files
         ignore_dirs {list}: The list of directories to exclude from the zip file
         ignore_files {list}: The list of files to exclude from the zip file
     """
-    working_dir = os.getcwd() # Special case for github. For local. use os.path.dirname(os.getcwd())
-    
+    working_dir = (
+        os.getcwd()
+    )  # Special case for github. For local. use os.path.dirname(os.getcwd())
+
     # Creating evaluation_script.zip file
     eval_script_dir = working_dir + "/evaluation_script"
-    eval_script_zip = zipfile.ZipFile("evaluation_script.zip", "w", zipfile.ZIP_DEFLATED)
+    eval_script_zip = zipfile.ZipFile(
+        "evaluation_script.zip", "w", zipfile.ZIP_DEFLATED
+    )
     for root, dirs, files in os.walk(eval_script_dir):
         for file in files:
             file_name = os.path.join(root, file)
-            name_in_zip_file = file_name[len(eval_script_dir)+1:] if file_name.startswith(eval_script_dir) else file_name
+            name_in_zip_file = (
+                file_name[len(eval_script_dir) + 1 :]
+                if file_name.startswith(eval_script_dir)
+                else file_name
+            )
             eval_script_zip.write(file_name, name_in_zip_file)
     eval_script_zip.close()
 
     # Creating the challenge_config.zip file
     zipf = zipfile.ZipFile(challenge_zip_file_path, "w", zipfile.ZIP_DEFLATED)
     for root, dirs, files in os.walk(working_dir):
-        parents = root.split('/')
+        parents = root.split("/")
         if not set(parents) & set(ignore_dirs):
             for file in files:
                 if file not in ignore_files:
                     file_name = os.path.join(root, file)
-                    name_in_zip_file = file_name[len(working_dir)+1:] if file_name.startswith(working_dir) else file_name
+                    name_in_zip_file = (
+                        file_name[len(working_dir) + 1 :]
+                        if file_name.startswith(working_dir)
+                        else file_name
+                    )
                     zipf.write(file_name, name_in_zip_file)
     zipf.close()
 
@@ -134,7 +150,9 @@ def load_host_configs(config_path):
         evalai_host_url = data["evalai_host_url"]
         return [host_auth_token, challenge_host_team_pk, evalai_host_url]
     else:
-        error_message = "\nThe host config json file is not present. Please include an auth token, team_pk & evalai_host_url in it: {}".format(config_path)
+        error_message = "\nThe host config json file is not present. Please include an auth token, team_pk & evalai_host_url in it: {}".format(
+            config_path
+        )
         print(error_message)
         os.environ["CHALLENGE_ERRORS"] = error_message
         return False

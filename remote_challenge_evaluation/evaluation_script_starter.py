@@ -98,10 +98,9 @@ if __name__ == "__main__":
         ""  # Please email EvalAI admin (team@cloudcv.org) to get the queue name
     )
     challenge_pk = (
-        ""  # Please email EvalAI admin (team@cloudcv.org) to get the queue name
+        ""  # Please email EvalAI admin (team@cloudcv.org) to get the challenge primary key
     )
 
-    submission_pk = ""  # Submission PK integer value from the message
     # Create evalai object
     evalai = EvalAI_Interface(auth_token, evalai_api_server, queue_name, challenge_pk)
 

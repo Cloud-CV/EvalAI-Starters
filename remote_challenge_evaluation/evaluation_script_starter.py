@@ -10,7 +10,7 @@ URLS = {
     "get_message_from_sqs_queue": "/api/jobs/challenge/queues/{}/",
     "get_submission_by_pk": "/api/jobs/submission/{}",
     "delete_message_from_sqs_queue": "/api/jobs/queues/{}/",
-    "update_evaluated_submission": "/api/jobs/challenges/{}/update_partially_evaluated_submission/",
+    "update_submission": "/api/jobs/challenges/{}/update_submission/",
 }
 
 
@@ -31,10 +31,25 @@ class EvalAI_Interface:
         self.CHALLENGE_PK = CHALLENGE_PK
 
     def get_request_headers(self):
-        headers = {"Authorization": "Token {}".format(self.AUTH_TOKEN)}
+        """Function to get the header of the EvalAI request in proper format
+
+        Returns:
+            [dict]: Authorization header
+        """
+        headers = {"Authorization": "Bearer {}".format(self.AUTH_TOKEN)}
         return headers
 
     def make_request(self, url, method, data=None):
+        """Function to make request to EvalAI interface
+
+        Args:
+            url ([str]): URL of the request
+            method ([str]): Method of the request
+            data ([dict], optional): Data of the request. Defaults to None.
+
+        Returns:
+            [JSON]: JSON response data
+        """
         headers = self.get_request_headers()
         try:
             response = requests.request(
@@ -47,39 +62,78 @@ class EvalAI_Interface:
         return response.json()
 
     def return_url_per_environment(self, url):
+        """Function to get the URL for API
+
+        Args:
+            url ([str]): API endpoint url to which the request is to be made
+
+        Returns:
+            [str]: API endpoint url with EvalAI base url attached
+        """
         base_url = "{0}".format(self.EVALAI_API_SERVER)
         url = "{0}{1}".format(base_url, url)
         return url
 
     def get_message_from_sqs_queue(self):
+        """Function to get the message from SQS Queue
+
+        Docs: https://eval.ai/api/docs/#operation/get_submission_message_from_queue
+
+        Returns:
+            [JSON]: JSON response data
+        """
         url = URLS.get("get_message_from_sqs_queue").format(self.QUEUE_NAME)
         url = self.return_url_per_environment(url)
         response = self.make_request(url, "GET")
         return response
 
     def delete_message_from_sqs_queue(self, receipt_handle):
+        """Function to delete the submission message from the queue
+
+        Docs: https://eval.ai/api/docs/#operation/delete_submission_message_from_queue
+
+        Args:
+            receipt_handle ([str]): Receipt handle of the message to be deleted
+
+        Returns:
+            [JSON]: JSON response data
+        """
         url = URLS.get("delete_message_from_sqs_queue").format(self.QUEUE_NAME)
         url = self.return_url_per_environment(url)
         data = {"receipt_handle": receipt_handle}
         response = self.make_request(url, "POST", data)
         return response
 
-    def update_submission_data(self, data, challenge_pk, submission_pk):
-        url = URLS.get("update_evaluated_submission").format(self.CHALLENGE_PK)
+    def update_submission_data(self, data):
+        """Function to update the submission data on EvalAI
+
+        Docs: https://eval.ai/api/docs/#operation/update_submission
+
+        Args:
+            data ([dict]): Data to be updated
+
+        Returns:
+            [JSON]: JSON response data
+        """
+        url = URLS.get("update_submission").format(self.CHALLENGE_PK)
         url = self.return_url_per_environment(url)
         response = self.make_request(url, "PUT", data=data)
         return response
 
-    def update_submission_status(self, data, challenge_pk):
-        url = URLS.get("update_evaluated_submission").format(self.CHALLENGE_PK)
+    def update_submission_status(self, data):
+        """
+
+        Docs: https://eval.ai/api/docs/#operation/update_submission
+
+        Args:
+            data ([dict]): Data to be updated
+
+        Returns:
+            [JSON]: JSON response data
+        """
+        url = URLS.get("update_submission").format(self.CHALLENGE_PK)
         url = self.return_url_per_environment(url)
         response = self.make_request(url, "PATCH", data=data)
-        return response
-
-    def update_submission_data_partially(self, data, challenge_pk):
-        url = URLS.get("update_evaluated_submission").format(self.CHALLENGE_PK)
-        url = self.return_url_per_environment(url)
-        response = self.make_request(url, "PUT", data=data)
         return response
 
     def get_submission_by_pk(self, submission_pk):
@@ -97,9 +151,7 @@ if __name__ == "__main__":
     queue_name = (
         ""  # Please email EvalAI admin (team@cloudcv.org) to get the queue name
     )
-    challenge_pk = (
-        ""  # Please email EvalAI admin (team@cloudcv.org) to get the challenge primary key
-    )
+    challenge_pk = ""  # Please email EvalAI admin (team@cloudcv.org) to get the challenge primary key
 
     # Create evalai object
     evalai = EvalAI_Interface(auth_token, evalai_api_server, queue_name, challenge_pk)
@@ -139,7 +191,7 @@ if __name__ == "__main__":
 
     # 1. Update EvalAI right after sending the submission into "RUNNING" state,
     status_data = {"submission": "", "job_name": "", "submission_status": "RUNNING"}
-    update_status = evalai.update_submission_status(status_data, challenge_pk)
+    update_status = evalai.update_submission_status(status_data)
 
     # 2. Update EvalAI after calculating final set of metrics and set submission status as "FINISHED"
     submission_data = {
@@ -151,9 +203,7 @@ if __name__ == "__main__":
         "result": '[{"split": "<split-name>", "show_to_participant": true,"accuracies": {"Metric1": 80,"Metric2": 60,"Metric3": 60,"Total": 10}}]',
         "metadata": "",
     }
-    update_data = evalai.update_submission_data_partially(
-        submission_data, challenge_pk, submission_pk
-    )
+    update_data = evalai.update_submission_data(submission_data)
     # OR
     # 3. Update EvalAI in case of errors and set submission status as "FAILED"
     submission_data = {
@@ -164,6 +214,4 @@ if __name__ == "__main__":
         "submission_status": "FAILED",
         "metadata": "",
     }
-    update_data = evalai.update_submission_data_partially(
-        submission_data, challenge_pk, submission_pk
-    )
+    update_data = evalai.update_submission_data(submission_data)

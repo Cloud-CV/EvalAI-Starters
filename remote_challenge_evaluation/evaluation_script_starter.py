@@ -146,11 +146,8 @@ class EvalAI_Interface:
 if __name__ == "__main__":
 
     auth_token = ""  # Go to EvalAI UI to fetch your auth token
-    evalai_api_server = ""  # For staging server, use -- https://staging.eval.ai
-    # For production server, use -- https://eval.ai
-    queue_name = (
-        ""  # Please email EvalAI admin (team@cloudcv.org) to get the queue name
-    )
+    evalai_api_server = ""  # For staging server, use -- https://staging.eval.ai; For production server, use -- https://eval.ai
+    queue_name = ""  # Please email EvalAI admin (team@cloudcv.org) to get the queue name
     challenge_pk = ""  # Please email EvalAI admin (team@cloudcv.org) to get the challenge primary key
 
     # Create evalai object
@@ -182,9 +179,10 @@ if __name__ == "__main__":
 
             else:
                 # Download the input file
-                # Run the submission with the file.
+                # Run the submission with the input file using your own code and data.
                 pass
 
+        # Poll challenge queue for new submissions
         time.sleep(60)
 
     # Q. How to update EvalAI with the submission state?

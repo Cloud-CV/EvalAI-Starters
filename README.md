@@ -57,6 +57,7 @@ If you are looking for a simple challenge configuration that you can replicate t
 4. Now, go to [EvalAI](https://eval.ai) to fetch the following details -
    1. `evalai_user_auth_token` - Go to [profile page](https://eval.ai/web/profile) after logging in and click on `Get your Auth Token` to copy your auth token.
    2. `host_team_pk` - Go to [host team page](https://eval.ai/web/challenge-host-teams) and copy the `ID` for the team you want to use for challenge creation.
+   3. `evalai_host_url` - Use `https://eval.ai` for production server and `https://staging.eval.ai` for staging server.
 
 5. Create a branch with name `challenge` in the forked repository from the `master` branch.
 <span style="color:purple">Note: Only changes in `challenge` branch will be synchronized with challenge on EvalAI.</span>

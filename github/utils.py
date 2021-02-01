@@ -125,7 +125,7 @@ def get_request_header(token):
     Arguments:
         token {str}: The user token to gain access to EvalAI
     """
-    header = {"Authorization": "Token {}".format(token)}
+    header = {"Authorization": "Bearer {}".format(token)}
     return header
 
 

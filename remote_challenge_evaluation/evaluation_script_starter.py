@@ -36,10 +36,7 @@ class EvalAI_Interface:
         Returns:
             [dict]: Authorization header
         """
-        # headers = {"Authorization": "Token {}".format(self.AUTH_TOKEN)} # For use with production server i.e. https://eval.ai
-        headers = {
-            "Authorization": "Bearer {}".format(self.AUTH_TOKEN)
-        }  # For use with staging server i.e. https://staging.eval.ai
+        headers = {"Authorization": "Bearer {}".format(self.AUTH_TOKEN)}
         return headers
 
     def make_request(self, url, method, data=None):

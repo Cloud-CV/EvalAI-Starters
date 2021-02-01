@@ -13,7 +13,7 @@ class EvalAI_Interface:
         self.EVALAI_API_SERVER = EVALAI_API_SERVER
 
     def get_request_headers(self):
-        headers = {"Authorization": "Token {}".format(self.AUTH_TOKEN)}
+        headers = {"Authorization": "Bearer {}".format(self.AUTH_TOKEN)}
         return headers
 
     def make_request(self, url, method, data=None):

@@ -10,7 +10,7 @@ URLS = {
     "get_message_from_sqs_queue": "/api/jobs/challenge/queues/{}/",
     "get_submission_by_pk": "/api/jobs/submission/{}",
     "delete_message_from_sqs_queue": "/api/jobs/queues/{}/",
-    "update_submission": "/api/jobs/challenges/{}/update_submission/",
+    "update_submission": "/api/jobs/challenge/{}/update_submission/",
 }
 
 

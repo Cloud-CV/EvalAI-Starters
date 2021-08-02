@@ -21,6 +21,16 @@ leaderboard:
       {
         "labels": ["Metric1", "Metric2", "Metric3", "Total"],
         "default_order_by": "Total",
+        "metadata": {
+          "Metric1": {
+            "sort_ascending": True,
+            "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+          },
+          "Metric2": {
+            "sort_ascending": True,
+            "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+          }
+        }
       }
 
 challenge_phases:

@@ -23,12 +23,12 @@ leaderboard:
         "default_order_by": "Total",
         "metadata": {
           "Metric1": {
-            "order_ascending": True,
-            "description": "",
+            "sort_ascending": True,
+            "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
           },
           "Metric2": {
-            "order_ascending": True,
-            "description": "",
+            "sort_ascending": True,
+            "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
           }
         }
       }

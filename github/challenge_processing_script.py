@@ -66,7 +66,10 @@ if __name__ == "__main__":
     zip_file = open(CHALLENGE_ZIP_FILE_PATH, "rb")
     file = {"zip_configuration": zip_file}
 
-    data = {"GITHUB_REPOSITORY": GITHUB_REPOSITORY}
+    data = {
+        "GITHUB_REPOSITORY": GITHUB_REPOSITORY,
+        "GITHUB_AUTH_TOKEN": GITHUB_AUTH_TOKEN,
+    }
 
     try:
         response = requests.post(url, data=data, headers=headers, files=file)

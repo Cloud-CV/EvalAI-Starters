@@ -2,6 +2,7 @@ import logging
 import requests
 import json
 import time
+from remote_evaluation_util import remote_evaluation_util
 
 logger = logging.getLogger(__name__)
 
@@ -145,13 +146,8 @@ class EvalAI_Interface:
 
 if __name__ == "__main__":
 
-    auth_token = ""  # Go to EvalAI UI to fetch your auth token
-    evalai_api_server = ""  # For staging server, use -- https://staging.eval.ai; For production server, use -- https://eval.ai
-    queue_name = ""  # Please email EvalAI admin (team@cloudcv.org) to get the queue name
-    challenge_pk = ""  # Please email EvalAI admin (team@cloudcv.org) to get the challenge primary key
-
     # Create evalai object
-    evalai = EvalAI_Interface(auth_token, evalai_api_server, queue_name, challenge_pk)
+    evalai = EvalAI_Interface(remote_evaluation_util.auth_token, remote_evaluation_util.evalai_api_server, remote_evaluation_util.queue_name, remote_evaluation_util.challenge_pk)
 
     # Q. How to set up the remote evaluation?
     while True:
@@ -178,38 +174,7 @@ if __name__ == "__main__":
                 pass
 
             else:
-                # Download the input file
-                # Run the submission with the input file using your own code and data.
-                pass
+                remote_evaluation_util.download_and_evaluate(submission, challenge_pk, phase_pk, submission_pk)
 
         # Poll challenge queue for new submissions
         time.sleep(60)
-
-    # Q. How to update EvalAI with the submission state?
-
-    # 1. Update EvalAI right after sending the submission into "RUNNING" state,
-    status_data = {"submission": "", "job_name": "", "submission_status": "RUNNING"}
-    update_status = evalai.update_submission_status(status_data)
-
-    # 2. Update EvalAI after calculating final set of metrics and set submission status as "FINISHED"
-    submission_data = {
-        "challenge_phase": "<phase_pk>",
-        "submission": "<submission_pk>",
-        "stdout": "",
-        "stderr": "",
-        "submission_status": "FINISHED",
-        "result": '[{"split": "<split-name>", "show_to_participant": true,"accuracies": {"Metric1": 80,"Metric2": 60,"Metric3": 60,"Total": 10}}]',
-        "metadata": "",
-    }
-    update_data = evalai.update_submission_data(submission_data)
-    # OR
-    # 3. Update EvalAI in case of errors and set submission status as "FAILED"
-    submission_data = {
-        "challenge_phase": "<phase_pk>",
-        "submission": "<submission_pk>",
-        "stdout": "",
-        "stderr": "<ERROR FROM SUBMISSION>",
-        "submission_status": "FAILED",
-        "metadata": "",
-    }
-    update_data = evalai.update_submission_data(submission_data)

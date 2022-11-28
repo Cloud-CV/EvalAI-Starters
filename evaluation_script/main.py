@@ -101,12 +101,13 @@ def evaluate(test_annotation_file, user_submission_file, phase_codename, **kwarg
             'submitted_at': u'2017-03-20T19:22:03.880652Z'
         }
     """
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     net = Network()
     net = jsontonet(user_submission_file,net)
     net.eval()
     net.to(device)
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    
     print("using {} device.".format(device))
 
     data_transform = {
@@ -184,4 +185,4 @@ def evaluate(test_annotation_file, user_submission_file, phase_codename, **kwarg
 
 
 if __name__ == "__main__":
-    evaluate('annotations/test_annotations_devsplit.json','network.json',1)
+    evaluate('annotations/test_annotations_devsplit.json','network.json',"dev")

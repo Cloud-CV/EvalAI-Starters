@@ -110,7 +110,7 @@ def evaluate(test_annotation_file, user_submission_file, phase_codename, **kwarg
     print("using {} device.".format(device))
 
     data_transform = {
-        "test": transforms.Compose([transforms.Resize((224, 224)), 
+        "test": transforms.Compose([transforms.Resize((64, 64)), 
                                    transforms.ToTensor(),
                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])}
     image_path = os.path.abspath(os.path.join(os.getcwd(), "Augtest"))  # get data root path

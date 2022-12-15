@@ -29,7 +29,7 @@ if __name__ == "__main__":
             else: # status is submitted
                 remote_evaluation_util.update_running(submission, job_name="")
                 submission_file_path = remote_evaluation_util.download(submission)
-                remote_evaluation_util.evaluate(submission_file_path, challenge_pk, phase_pk, submission_pk)
+                remote_evaluation_util.evaluate(submission_file_path, submission.challenge_phase.codename, challenge_pk, phase_pk, submission_pk)
 
         # Poll challenge queue for new submissions
         time.sleep(60)

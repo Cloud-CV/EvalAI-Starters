@@ -26,7 +26,7 @@ class RemoteEvaluationUtil:
         return submission_file_path
 
     # TODO: Write an evaluate method, change default parameters.
-    def evaluate(test_annotation_file, challenge_pk, phase_pk, submission_pk, user_submission_file=None, phase_codename=None, **kwargs):
+    def evaluate(user_submission_file, phase_codename, challenge_pk, phase_pk, submission_pk, test_annotation_file = None **kwargs):
         # Run the submission with the input file using your own code and data.
 
         # Once the submission is done, make an API call to our queue to inform that the message is evaluated

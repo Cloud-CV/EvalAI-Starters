@@ -1,7 +1,4 @@
 import os
-import requests
-from eval_ai_interface import EvalAI_Interface
-
 
 class RemoteEvaluationUtil:
     def __init__(self):
@@ -11,17 +8,6 @@ class RemoteEvaluationUtil:
         self.queue_name = os.environ["QUEUE_NAME"]  # Check Manage Tab of challenge for queue name
         self.challenge_pk = os.environ["CHALLENGE_PK"]  # Check Manage Tab of challenge for challenge PK
         self.save_dir = os.environ.get("SAVE_DIR", "./") # Location where submissions are downloaded
-
-        self.evalai = EvalAI_Interface(
-            self.auth_token, self.evalai_api_server, self.queue_name, self.challenge_pk
-        )
-
-    def download(self, submission):
-        response = requests.get(submission.input_file.url)
-        submission_file_path = os.path.join(self.save_dir, submission.input_file.name)
-        with open(submission_file_path, "wb") as f:
-            f.write(response.content)
-        return submission_file_path
 
     # TODO: Write an evaluate method, change default parameters.
     def evaluate(user_submission_file, phase_codename, challenge_pk, phase_pk, submission_pk, test_annotation_file = None, **kwargs):
@@ -67,45 +53,4 @@ class RemoteEvaluationUtil:
             }
         """
         pass
-    
-    def update_running(self, submission, job_name):
-        # Set the status to running
-        status_data = {
-            "submission": submission,
-            "job_name": job_name,
-            "submission_status": "RUNNING",
-        }
-        update_status = self.evalai.update_submission_status(status_data)
 
-    def update_failed(
-        self, phase_pk, submission_pk, submission_error, stdout="", metadata=""
-    ):
-        submission_data = {
-            "challenge_phase": phase_pk,
-            "submission": submission_pk,
-            "stdout": stdout,
-            "stderr": submission_error,
-            "submission_status": "FAILED",
-            "metadata": metadata,
-        }
-        update_data = self.evalai.update_submission_data(submission_data)
-
-    def update_finished(
-        self,
-        phase_pk,
-        submission_pk,
-        result,
-        submission_error="",
-        stdout="",
-        metadata="",
-    ):
-        submission_data = {
-            "challenge_phase": phase_pk,
-            "submission": submission_pk,
-            "stdout": stdout,
-            "stderr": submission_error,
-            "submission_status": "FINISHED",
-            "result": result,
-            "metadata": metadata,
-        }
-        update_data = self.evalai.update_submission_data(submission_data)

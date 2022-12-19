@@ -1,11 +1,63 @@
+import os
 import time
-
+import requests
+from eval_ai_interface import EvalAI_Interface
 from remote_evaluation_util import RemoteEvaluationUtil
 
+def download(submission, save_dir):
+    response = requests.get(submission.input_file.url)
+    submission_file_path = os.path.join(save_dir, submission.input_file.name)
+    with open(submission_file_path, "wb") as f:
+        f.write(response.content)
+    return submission_file_path
+
+def update_running(evalai, submission, job_name):
+    status_data = {
+        "submission": submission,
+        "job_name": job_name,
+        "submission_status": "RUNNING",
+    }
+    update_status = evalai.update_submission_status(status_data)
+
+def update_failed(
+    evalai, phase_pk, submission_pk, submission_error, stdout="", metadata=""
+):
+    submission_data = {
+        "challenge_phase": phase_pk,
+        "submission": submission_pk,
+        "stdout": stdout,
+        "stderr": submission_error,
+        "submission_status": "FAILED",
+        "metadata": metadata,
+    }
+    update_data = evalai.update_submission_data(submission_data)
+
+def update_finished(
+    evalai,
+    phase_pk,
+    submission_pk,
+    result,
+    submission_error="",
+    stdout="",
+    metadata="",
+):
+    submission_data = {
+        "challenge_phase": phase_pk,
+        "submission": submission_pk,
+        "stdout": stdout,
+        "stderr": submission_error,
+        "submission_status": "FINISHED",
+        "result": result,
+        "metadata": metadata,
+    }
+    update_data = evalai.update_submission_data(submission_data)
+    
 if __name__ == "__main__":
 
     remote_evaluation_util = RemoteEvaluationUtil()
-    evalai = remote_evaluation_util.evalai
+    evalai = EvalAI_Interface(
+        remote_evaluation_util.auth_token, remote_evaluation_util.evalai_api_server, remote_evaluation_util.queue_name, remote_evaluation_util.challenge_pk
+    )
 
     while True:
         # Get the message from the queue
@@ -27,12 +79,12 @@ if __name__ == "__main__":
                 evalai.delete_message_from_sqs_queue(message_receipt_handle)
 
             else:
-                remote_evaluation_util.update_running(submission, job_name="")
-                submission_file_path = remote_evaluation_util.download(submission)
+                update_running(submission, job_name="")
+                submission_file_path = download(submission, remote_evaluation_util.save_dir)
                 try:
                     results = remote_evaluation_util.evaluate(submission_file_path, submission.challenge_phase.codename, challenge_pk, phase_pk, submission_pk)
-                    results.update_finished(phase_pk, submission_pk, results)
+                    update_finished(phase_pk, submission_pk, results)
                 except Exception as e:
-                    remote_evaluation_util.update_failed(phase_pk, submission_pk, str(e))
+                    update_failed(phase_pk, submission_pk, str(e))
         # Poll challenge queue for new submissions
         time.sleep(60)

@@ -1,8 +1,20 @@
 import os
 import time
+
 import requests
 from eval_ai_interface import EvalAI_Interface
-from remote_evaluation_util import RemoteEvaluationUtil
+from evaluate import evaluate
+
+auth_token = os.environ["AUTH_TOKEN"]  # Go to EvalAI UI to fetch your auth token
+evalai_api_server = os.environ[
+    "API_SERVER"
+]  # For staging server, use -- https://staging.eval.ai; For production server, use -- https://eval.ai
+queue_name = os.environ["QUEUE_NAME"]  # Check Manage Tab of challenge for queue name
+challenge_pk = os.environ[
+    "CHALLENGE_PK"
+]  # Check Manage Tab of challenge for challenge PK
+save_dir = os.environ.get("SAVE_DIR", "./")  # Location where submissions are downloaded
+
 
 def download(submission, save_dir):
     response = requests.get(submission.input_file.url)
@@ -11,6 +23,7 @@ def download(submission, save_dir):
         f.write(response.content)
     return submission_file_path
 
+
 def update_running(evalai, submission, job_name):
     status_data = {
         "submission": submission,
@@ -18,6 +31,7 @@ def update_running(evalai, submission, job_name):
         "submission_status": "RUNNING",
     }
     update_status = evalai.update_submission_status(status_data)
+
 
 def update_failed(
     evalai, phase_pk, submission_pk, submission_error, stdout="", metadata=""
@@ -31,6 +45,7 @@ def update_failed(
         "metadata": metadata,
     }
     update_data = evalai.update_submission_data(submission_data)
+
 
 def update_finished(
     evalai,
@@ -51,13 +66,10 @@ def update_finished(
         "metadata": metadata,
     }
     update_data = evalai.update_submission_data(submission_data)
-    
-if __name__ == "__main__":
 
-    remote_evaluation_util = RemoteEvaluationUtil()
-    evalai = EvalAI_Interface(
-        remote_evaluation_util.auth_token, remote_evaluation_util.evalai_api_server, remote_evaluation_util.queue_name, remote_evaluation_util.challenge_pk
-    )
+
+if __name__ == "__main__":
+    evalai = EvalAI_Interface(auth_token, evalai_api_server, queue_name, challenge_pk)
 
     while True:
         # Get the message from the queue
@@ -80,9 +92,15 @@ if __name__ == "__main__":
 
             else:
                 update_running(submission, job_name="")
-                submission_file_path = download(submission, remote_evaluation_util.save_dir)
+                submission_file_path = download(submission, save_dir)
                 try:
-                    results = remote_evaluation_util.evaluate(submission_file_path, submission.challenge_phase.codename, challenge_pk, phase_pk, submission_pk)
+                    results = evaluate(
+                        submission_file_path,
+                        submission.challenge_phase.codename,
+                        challenge_pk,
+                        phase_pk,
+                        submission_pk,
+                    )
                     update_finished(phase_pk, submission_pk, results)
                 except Exception as e:
                     update_failed(phase_pk, submission_pk, str(e))

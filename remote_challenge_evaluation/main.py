@@ -26,10 +26,13 @@ if __name__ == "__main__":
                 message_receipt_handle = message.get("receipt_handle")
                 evalai.delete_message_from_sqs_queue(message_receipt_handle)
 
-            else: # status is submitted
+            else:
                 remote_evaluation_util.update_running(submission, job_name="")
                 submission_file_path = remote_evaluation_util.download(submission)
-                remote_evaluation_util.evaluate(submission_file_path, submission.challenge_phase.codename, challenge_pk, phase_pk, submission_pk)
-
+                try:
+                    results = remote_evaluation_util.evaluate(submission_file_path, submission.challenge_phase.codename, challenge_pk, phase_pk, submission_pk)
+                    results.update_finished(phase_pk, submission_pk, results)
+                except Exception as e:
+                    remote_evaluation_util.update_failed(phase_pk, submission_pk, str(e))
         # Poll challenge queue for new submissions
         time.sleep(60)

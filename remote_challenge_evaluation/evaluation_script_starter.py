@@ -142,6 +142,50 @@ class EvalAI_Interface:
         response = self.make_request(url, "GET")
         return response
 
+    def pull_docker_image(self, image_uri, phase_pk):
+        import base64
+        import boto3
+        import docker
+
+        # Note: Amazon AWS does not reccomend to hard code credentials in source
+        # code, so alternatively you can create a credential file as shown in
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html#shared-credentials-file
+        # You will be then able to create the boto3.client without explicitly
+        # supplying the credentials as they will be automatically retrieved
+        # from the file.
+
+        AWS_ACCESS_KEY_ID = '<insert access key here>'
+        AWS_SECRET_ACCESS_KEY = '<insert secret access key here>'
+        AWS_DEFAULT_REGION = 'us-east-1'
+        AWS_ACCOUNT_ID = '<insert account id here>'
+
+        ecr_client = boto3.client(
+            "ecr",
+            region_name=AWS_DEFAULT_REGION,
+            aws_access_key_id=AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=AWS_SECRET_ACCESS_KEY
+        )
+
+        token = ecr_client.get_authorization_token(
+            registryIds=[AWS_ACCOUNT_ID]
+        )
+        ecr_client = boto3.client("ecr", region_name=AWS_DEFAULT_REGION)
+        username, password = (
+            base64.b64decode(
+                token["authorizationData"][0]["authorizationToken"]
+            )
+            .decode()
+            .split(":")
+        )
+        registry = token["authorizationData"][0]["proxyEndpoint"]
+        docker_client = docker.from_env()
+        docker_client.login(
+            username, password, registry=registry
+        )
+
+        docker_client.login(username, password, registry=registry)
+        docker_client.images.pull(image_uri)
+
 
 if __name__ == "__main__":
 
@@ -180,6 +224,10 @@ if __name__ == "__main__":
             else:
                 # Download the input file
                 # Run the submission with the input file using your own code and data.
+                #
+                # If the submission is a docker image, you can pull the image
+                # by using evalai.pull_docker_image. This will require installing
+                # boto3 and docker libraries.
                 pass
 
         # Poll challenge queue for new submissions

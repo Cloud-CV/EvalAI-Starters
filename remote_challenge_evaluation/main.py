@@ -94,10 +94,7 @@ if __name__ == "__main__":
                 try:
                     results = evaluate(
                         submission_file_path,
-                        submission.challenge_phase.codename,
-                        challenge_pk,
-                        phase_pk,
-                        submission_pk,
+                        submission.challenge_phase.codename
                     )
                     update_finished(phase_pk, submission_pk, results)
                 except Exception as e:

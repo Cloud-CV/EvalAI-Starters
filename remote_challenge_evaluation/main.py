@@ -5,15 +5,13 @@ import requests
 from eval_ai_interface import EvalAI_Interface
 from evaluate import evaluate
 
-auth_token = os.environ["AUTH_TOKEN"]  # Go to EvalAI UI to fetch your auth token
-evalai_api_server = os.environ[
-    "API_SERVER"
-]  # For staging server, use -- https://staging.eval.ai; For production server, use -- https://eval.ai
-queue_name = os.environ["QUEUE_NAME"]  # Check Manage Tab of challenge for queue name
-challenge_pk = os.environ[
-    "CHALLENGE_PK"
-]  # Check Manage Tab of challenge for challenge PK
-save_dir = os.environ.get("SAVE_DIR", "./")  # Location where submissions are downloaded
+# Remote Evaluation Meta Data
+# See https://evalai.readthedocs.io/en/latest/evaluation_scripts.html#writing-remote-evaluation-script
+auth_token = os.environ["AUTH_TOKEN"]
+evalai_api_server = os.environ["API_SERVER"]
+queue_name = os.environ["QUEUE_NAME"]
+challenge_pk = os.environ["CHALLENGE_PK"]
+save_dir = os.environ.get("SAVE_DIR", "./")
 
 
 def download(submission, save_dir):

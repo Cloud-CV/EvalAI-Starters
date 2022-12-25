@@ -1,10 +1,8 @@
 import logging
+
 import requests
-import json
-import time
 
 logger = logging.getLogger(__name__)
-
 
 URLS = {
     "get_message_from_sqs_queue": "/api/jobs/challenge/queues/{}/",
@@ -141,75 +139,3 @@ class EvalAI_Interface:
         url = self.return_url_per_environment(url)
         response = self.make_request(url, "GET")
         return response
-
-
-if __name__ == "__main__":
-
-    auth_token = ""  # Go to EvalAI UI to fetch your auth token
-    evalai_api_server = ""  # For staging server, use -- https://staging.eval.ai; For production server, use -- https://eval.ai
-    queue_name = ""  # Please email EvalAI admin (team@cloudcv.org) to get the queue name
-    challenge_pk = ""  # Please email EvalAI admin (team@cloudcv.org) to get the challenge primary key
-
-    # Create evalai object
-    evalai = EvalAI_Interface(auth_token, evalai_api_server, queue_name, challenge_pk)
-
-    # Q. How to set up the remote evaluation?
-    while True:
-        # Get the message from the queue
-        message = evalai.get_message_from_sqs_queue()
-        message_body = message.get("body")
-        if message_body:
-            submission_pk = message_body.get("submission_pk")
-            challenge_pk = message_body.get("challenge_pk")
-            phase_pk = message_body.get("phase_pk")
-            # Get submission details -- This will contain the input file URL
-            submission = evalai.get_submission_by_pk(submission_pk)
-
-            if (
-                submission.get("status") == "finished"
-                or submission.get("status") == "failed"
-                or submission.get("status") == "cancelled"
-            ):
-                message_receipt_handle = message.get("receipt_handle")
-                evalai.delete_message_from_sqs_queue(message_receipt_handle)
-
-            elif submission.get("status") == "running":
-                # Do nothing on EvalAI
-                pass
-
-            else:
-                # Download the input file
-                # Run the submission with the input file using your own code and data.
-                pass
-
-        # Poll challenge queue for new submissions
-        time.sleep(60)
-
-    # Q. How to update EvalAI with the submission state?
-
-    # 1. Update EvalAI right after sending the submission into "RUNNING" state,
-    status_data = {"submission": "", "job_name": "", "submission_status": "RUNNING"}
-    update_status = evalai.update_submission_status(status_data)
-
-    # 2. Update EvalAI after calculating final set of metrics and set submission status as "FINISHED"
-    submission_data = {
-        "challenge_phase": "<phase_pk>",
-        "submission": "<submission_pk>",
-        "stdout": "",
-        "stderr": "",
-        "submission_status": "FINISHED",
-        "result": '[{"split": "<split-name>", "show_to_participant": true,"accuracies": {"Metric1": 80,"Metric2": 60,"Metric3": 60,"Total": 10}}]',
-        "metadata": "",
-    }
-    update_data = evalai.update_submission_data(submission_data)
-    # OR
-    # 3. Update EvalAI in case of errors and set submission status as "FAILED"
-    submission_data = {
-        "challenge_phase": "<phase_pk>",
-        "submission": "<submission_pk>",
-        "stdout": "",
-        "stderr": "<ERROR FROM SUBMISSION>",
-        "submission_status": "FAILED",
-        "metadata": "",
-    }
-    update_data = evalai.update_submission_data(submission_data)

@@ -1,7 +1,9 @@
+import json
 import os
 import time
 
 import requests
+
 from eval_ai_interface import EvalAI_Interface
 from evaluate import evaluate
 
@@ -15,17 +17,18 @@ save_dir = os.environ.get("SAVE_DIR", "./")
 
 
 def download(submission, save_dir):
-    response = requests.get(submission.input_file.url)
-    submission_file_path = os.path.join(save_dir, submission.input_file.name)
+    response = requests.get(submission["input_file"])
+    submission_file_path = os.path.join(
+        save_dir, submission["input_file"].split("/")[-1]
+    )
     with open(submission_file_path, "wb") as f:
         f.write(response.content)
     return submission_file_path
 
 
-def update_running(evalai, submission, job_name):
+def update_running(evalai, submission_pk):
     status_data = {
-        "submission": submission,
-        "job_name": job_name,
+        "submission": submission_pk,
         "submission_status": "RUNNING",
     }
     update_status = evalai.update_submission_status(status_data)
@@ -79,7 +82,7 @@ if __name__ == "__main__":
             phase_pk = message_body.get("phase_pk")
             # Get submission details -- This will contain the input file URL
             submission = evalai.get_submission_by_pk(submission_pk)
-
+            challenge_phase = evalai.get_challenge_phase_by_pk(phase_pk)
             if (
                 submission.get("status") == "finished"
                 or submission.get("status") == "failed"
@@ -89,15 +92,17 @@ if __name__ == "__main__":
                 evalai.delete_message_from_sqs_queue(message_receipt_handle)
 
             else:
-                update_running(submission, job_name="")
+                if submission.get("status") == "submitted":
+                    update_running(evalai, submission_pk)
                 submission_file_path = download(submission, save_dir)
                 try:
                     results = evaluate(
-                        submission_file_path,
-                        submission.challenge_phase.codename
+                        submission_file_path, challenge_phase["codename"]
                     )
-                    update_finished(phase_pk, submission_pk, results)
+                    update_finished(
+                        evalai, phase_pk, submission_pk, json.dumps(results["result"])
+                    )
                 except Exception as e:
-                    update_failed(phase_pk, submission_pk, str(e))
+                    update_failed(evalai, phase_pk, submission_pk, str(e))
         # Poll challenge queue for new submissions
         time.sleep(60)

@@ -1,4 +1,3 @@
-import random
 
 
 def evaluate(user_submission_file, phase_codename, test_annotation_file=None, **kwargs):
@@ -44,38 +43,25 @@ def evaluate(user_submission_file, phase_codename, test_annotation_file=None, **
         print("Evaluating for Dev Phase")
         output["result"] = [
             {
-                "train_split": {
-                    "Metric1": random.randint(0, 99),
-                    "Metric2": random.randint(0, 99),
-                    "Metric3": random.randint(0, 99),
-                    "Total": random.randint(0, 99),
-                }
-            }
+                "split": "train_split",
+                "show_to_participant": True,
+                "accuracies": {"Metric1": 90},
+            },
         ]
-        # To display the results in the result file
-        output["submission_result"] = output["result"][0]["train_split"]
         print("Completed evaluation for Dev Phase")
     elif phase_codename == "test":
         print("Evaluating for Test Phase")
         output["result"] = [
             {
-                "train_split": {
-                    "Metric1": random.randint(0, 99),
-                    "Metric2": random.randint(0, 99),
-                    "Metric3": random.randint(0, 99),
-                    "Total": random.randint(0, 99),
-                }
+                "split": "train_split",
+                "show_to_participant": True,
+                "accuracies": {"Metric1": 90},
             },
             {
-                "test_split": {
-                    "Metric1": random.randint(0, 99),
-                    "Metric2": random.randint(0, 99),
-                    "Metric3": random.randint(0, 99),
-                    "Total": random.randint(0, 99),
-                }
+                "split": "test_split",
+                "show_to_participant": False,
+                "accuracies": {"Metric1": 50, "Metric2": 40},
             },
         ]
-        # To display the results in the result file
-        output["submission_result"] = output["result"][0]
         print("Completed evaluation for Test Phase")
     return output

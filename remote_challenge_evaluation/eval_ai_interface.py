@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 URLS = {
     "get_message_from_sqs_queue": "/api/jobs/challenge/queues/{}/",
     "get_submission_by_pk": "/api/jobs/submission/{}",
+    "get_challenge_phase_by_pk": "/api/challenges/challenge/phase/{}",
     "delete_message_from_sqs_queue": "/api/jobs/queues/{}/",
     "update_submission": "/api/jobs/challenge/{}/update_submission/",
 }
@@ -136,6 +137,12 @@ class EvalAI_Interface:
 
     def get_submission_by_pk(self, submission_pk):
         url = URLS.get("get_submission_by_pk").format(submission_pk)
+        url = self.return_url_per_environment(url)
+        response = self.make_request(url, "GET")
+        return response
+
+    def get_challenge_phase_by_pk(self, phase_pk):
+        url = URLS.get("get_challenge_phase_by_pk").format(phase_pk)
         url = self.return_url_per_environment(url)
         response = self.make_request(url, "GET")
         return response

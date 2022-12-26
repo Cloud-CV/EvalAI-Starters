@@ -10,7 +10,11 @@ def evaluate(user_submission_file, phase_codename, test_annotation_file=None, **
 
         `test_annotations_file`: Path to test_annotation_file on the server
             We recommend setting a default `test_annotation_file` or using `phase_codename`
-            to select the appropriate file.
+            to select the appropriate file. For example, you could load test annotation file
+            for current phase as:
+            ```
+            test_annotation_file = json.loads(open("{phase_codename}_path", "r"))
+            ```
         `**kwargs`: keyword arguments that contains additional submission
         metadata that challenge hosts can use to send slack notification.
         You can access the submission metadata

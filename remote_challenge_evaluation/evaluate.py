@@ -1,4 +1,3 @@
-import random
 
 
 def evaluate(user_submission_file, phase_codename, test_annotation_file=None, **kwargs):
@@ -11,7 +10,11 @@ def evaluate(user_submission_file, phase_codename, test_annotation_file=None, **
 
         `test_annotations_file`: Path to test_annotation_file on the server
             We recommend setting a default `test_annotation_file` or using `phase_codename`
-            to select the appropriate file.
+            to select the appropriate file. For example, you could load test annotation file
+            for current phase as:
+            ```
+            test_annotation_file = json.loads(open("{phase_codename}_path", "r"))
+            ```
         `**kwargs`: keyword arguments that contains additional submission
         metadata that challenge hosts can use to send slack notification.
         You can access the submission metadata
@@ -39,43 +42,35 @@ def evaluate(user_submission_file, phase_codename, test_annotation_file=None, **
             'submitted_at': u'2017-03-20T19:22:03.880652Z'
         }
     """
+
+    '''
+    # Load test annotation file for current phase
+    test_annotation_file = json.loads(open("{phase_codename}_path", "r"))
+    '''
     output = {}
     if phase_codename == "dev":
         print("Evaluating for Dev Phase")
         output["result"] = [
             {
-                "train_split": {
-                    "Metric1": random.randint(0, 99),
-                    "Metric2": random.randint(0, 99),
-                    "Metric3": random.randint(0, 99),
-                    "Total": random.randint(0, 99),
-                }
-            }
+                "split": "train_split",
+                "show_to_participant": True,
+                "accuracies": {"Metric1": 90},
+            },
         ]
-        # To display the results in the result file
-        output["submission_result"] = output["result"][0]["train_split"]
         print("Completed evaluation for Dev Phase")
     elif phase_codename == "test":
         print("Evaluating for Test Phase")
         output["result"] = [
             {
-                "train_split": {
-                    "Metric1": random.randint(0, 99),
-                    "Metric2": random.randint(0, 99),
-                    "Metric3": random.randint(0, 99),
-                    "Total": random.randint(0, 99),
-                }
+                "split": "train_split",
+                "show_to_participant": True,
+                "accuracies": {"Metric1": 90},
             },
             {
-                "test_split": {
-                    "Metric1": random.randint(0, 99),
-                    "Metric2": random.randint(0, 99),
-                    "Metric3": random.randint(0, 99),
-                    "Total": random.randint(0, 99),
-                }
+                "split": "test_split",
+                "show_to_participant": False,
+                "accuracies": {"Metric1": 50, "Metric2": 40},
             },
         ]
-        # To display the results in the result file
-        output["submission_result"] = output["result"][0]
         print("Completed evaluation for Test Phase")
     return output

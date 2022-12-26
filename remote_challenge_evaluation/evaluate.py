@@ -42,6 +42,11 @@ def evaluate(user_submission_file, phase_codename, test_annotation_file=None, **
             'submitted_at': u'2017-03-20T19:22:03.880652Z'
         }
     """
+
+    '''
+    # Load test annotation file for current phase
+    test_annotation_file = json.loads(open("{phase_codename}_path", "r"))
+    '''
     output = {}
     if phase_codename == "dev":
         print("Evaluating for Dev Phase")

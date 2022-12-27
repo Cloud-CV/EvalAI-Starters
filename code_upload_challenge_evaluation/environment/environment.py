@@ -16,7 +16,7 @@ import evaluation_pb2_grpc
 
 LOCAL_EVALUATION = os.environ.get("LOCAL_EVALUATION")
 EVALUATION_COMPLETED = False
-TOTAL_ITERATIONS = 10
+MAX_EVALUATION_ITERATIONS = 10
 
 
 class evaluator_environment:
@@ -62,7 +62,7 @@ class Environment(evaluation_pb2_grpc.EnvironmentServicer):
             if LOCAL_EVALUATION:
                print("Trial {0} Complete. Trial Score: {1}. Average Score: {2}.".format(self.iteration, env.score,
                                                                                         avg_score))
-            if self.iteration >= TOTAL_ITERATIONS:
+            if self.iteration >= MAX_EVALUATION_ITERATIONS:
                 if not LOCAL_EVALUATION:
                     update_submission_result(
                         avg_score, self.challenge_pk, self.phase_pk, self.submission_pk
@@ -75,7 +75,7 @@ class Environment(evaluation_pb2_grpc.EnvironmentServicer):
                 env = evaluator_environment()
         return evaluation_pb2.Package(
             SerializedEntity=pack_for_grpc(
-                {"feedback": feedback, "current_score": score, "all_complete": self.iteration >= TOTAL_ITERATIONS}
+                {"feedback": feedback, "current_score": score, "all_complete": self.iteration >= MAX_EVALUATION_ITERATIONS}
             )
         )
 

@@ -72,7 +72,7 @@ class Environment(evaluation_pb2_grpc.EnvironmentServicer):
                 env = evaluator_environment()
         return evaluation_pb2.Package(
             SerializedEntity=pack_for_grpc(
-                {"feedback": feedback, "current_score": score, "all_complete": self.iteration < TOTAL_ITERATIONS}
+                {"feedback": feedback, "current_score": score, "all_complete": self.iteration >= TOTAL_ITERATIONS}
             )
         )
 

@@ -26,13 +26,18 @@ def unpack_for_grpc(entity):
 
 
 flag = None
+step_count = 0
 
 while not flag:
+    action = 0 if step_count % 2 == 0 else 1
     base = unpack_for_grpc(
         stub.act_on_environment(
-            evaluation_pb2.Package(SerializedEntity=pack_for_grpc(1))
+            evaluation_pb2.Package(SerializedEntity=pack_for_grpc(action))
         ).SerializedEntity
     )
-    flag = base["feedback"][2]
+    flag = base["all_complete"]
+    if base["feedback"][2]:
+        step_count = 0
+    step_count += 1
     print("Agent Feedback", base["feedback"])
     print("*" * 100)

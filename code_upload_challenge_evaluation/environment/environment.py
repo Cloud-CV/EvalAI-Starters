@@ -16,6 +16,7 @@ import evaluation_pb2_grpc
 
 LOCAL_EVALUATION = os.environ.get("LOCAL_EVALUATION")
 EVALUATION_COMPLETED = False
+TOTAL_ITERATIONS = 10
 
 
 class evaluator_environment:
@@ -38,6 +39,8 @@ class Environment(evaluation_pb2_grpc.EnvironmentServicer):
         self.phase_pk = phase_pk
         self.submission_pk = submission_pk
         self.server = server
+        self.iteration = 0
+        self.sum_score = 0
 
     def get_action_space(self, request, context):
         message = pack_for_grpc(env.get_action_space())
@@ -45,22 +48,31 @@ class Environment(evaluation_pb2_grpc.EnvironmentServicer):
 
     def act_on_environment(self, request, context):
         global EVALUATION_COMPLETED
+        global env
         if not env.feedback or not env.feedback[2]:
             action = unpack_for_grpc(request.SerializedEntity)
             env.next_score()
             env.feedback = env.env.step(action)
+        feedback = env.feedback
+        score = env.score
         if env.feedback[2]:
-            if not LOCAL_EVALUATION:
-                update_submission_result(
-                    env, self.challenge_pk, self.phase_pk, self.submission_pk
-                )
+            self.sum_score += env.score
+            self.iteration += 1
+            if self.iteration >= TOTAL_ITERATIONS:
+                avg_score = self.sum_score/float(self.iteration)
+                if not LOCAL_EVALUATION:
+                    update_submission_result(
+                        avg_score, self.challenge_pk, self.phase_pk, self.submission_pk
+                    )
+                else:
+                    print("Final Score: {0}".format(avg_score))
+                    print("Stopping Evaluation!")
+                    EVALUATION_COMPLETED = True
             else:
-                print("Final Score: {0}".format(env.score))
-                print("Stopping Evaluation!")
-                EVALUATION_COMPLETED = True
+                env = evaluator_environment()
         return evaluation_pb2.Package(
             SerializedEntity=pack_for_grpc(
-                {"feedback": env.feedback, "current_score": env.score,}
+                {"feedback": feedback, "current_score": score, "all_complete": self.iteration < TOTAL_ITERATIONS}
             )
         )
 
@@ -84,7 +96,7 @@ def get_action_space(env):
     return list(range(env.action_space.n))
 
 
-def update_submission_result(env, challenge_pk, phase_pk, submission_pk):
+def update_submission_result(avg_score, challenge_pk, phase_pk, submission_pk):
     submission_data = {
         "submission_status": "finished",
         "submission": submission_pk,
@@ -92,7 +104,7 @@ def update_submission_result(env, challenge_pk, phase_pk, submission_pk):
     submission_data = {
         "challenge_phase": phase_pk,
         "submission": submission_pk,
-        "stdout": "standard_ouput",
+        "stdout": "standard_output",
         "stderr": "standard_error",
         "submission_status": "FINISHED",
         "result": json.dumps(
@@ -100,7 +112,7 @@ def update_submission_result(env, challenge_pk, phase_pk, submission_pk):
                 {
                     "split": "train_split",
                     "show_to_participant": True,
-                    "accuracies": {"score": env.score},
+                    "accuracies": {"score": avg_score},
                 }
             ]
         ),
@@ -116,7 +128,7 @@ def main():
         BODY = os.environ.get("BODY")
         # Sample example for BODY
         # BODY = "{'submitted_image_uri': '937891341272.dkr.ecr.us-east-1.amazonaws.com/cartpole-challenge-203-participant-team-265:bb55f57f-ae44-4e76-96c2-e1ebb5d7b65a', 'submission_pk': 1351, 'phase_pk': '527', 'challenge_pk': '203'}"
-        BODY = BODY.replace("'", '"')
+        BODY = BODY.repl=ace("'", '"')
         BODY = json.loads(BODY)
         challenge_pk = BODY["challenge_pk"]
         phase_pk = BODY["phase_pk"]

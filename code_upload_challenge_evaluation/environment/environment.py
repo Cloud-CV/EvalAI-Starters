@@ -58,8 +58,11 @@ class Environment(evaluation_pb2_grpc.EnvironmentServicer):
         if env.feedback[2]:
             self.sum_score += env.score
             self.iteration += 1
+            avg_score = self.sum_score/float(self.iteration)
+            if LOCAL_EVALUATION:
+               print("Trial {0} Complete. Trial Score: {1}. Average Score: {2}.".format(self.iteration, env.score,
+                                                                                        avg_score))
             if self.iteration >= TOTAL_ITERATIONS:
-                avg_score = self.sum_score/float(self.iteration)
                 if not LOCAL_EVALUATION:
                     update_submission_result(
                         avg_score, self.challenge_pk, self.phase_pk, self.submission_pk

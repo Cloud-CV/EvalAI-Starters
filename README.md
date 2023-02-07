@@ -62,6 +62,22 @@ If you are looking for a simple challenge configuration that you can replicate t
 
 11. To update the challenge on EvalAI, make changes in the repository and push on `challenge` branch and wait for the build to complete.
 
+### Printing and Logging in Evaluation Script
+`print` statements will show up on the console directly.
+In order to get `logging` statements from the evaluation script, ensure that the logger has a `stdout` handler added. We redirect the output from `stdout` to the submission workers console.
+An example logger can be created like so:
+
+```python
+    eval_script_logger = logging.getLogger(name='eval_script')
+    eval_script_logger.setLevel(logging.DEBUG)
+
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(logging.DEBUG)
+    eval_script_logger.addHandler(handler)
+```
+
+Then, we can use this logger anywhere in the script and the corresponding level logs will show up in the output.
+
 ## Create challenge using config
 
 1. Fork this repository.

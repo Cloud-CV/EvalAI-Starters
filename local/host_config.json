@@ -1,0 +1,6 @@
+{
+    "token": "<evalai_user_auth_token>",
+    "team_pk": "<host_team_pk>",
+    "evalai_host_url": "http://localhost:8000",
+    "github_repo": "EvalAI-Starters"
+}

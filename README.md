@@ -84,6 +84,24 @@ In order to test the evaluation script locally before uploading it to [EvalAI](h
 
 3. Run the command `python -m worker.run` from the directory where `annotations/` `challenge_data/` and `worker/` directories are present. If the command runs successfully, then the evaluation script works locally and will work on the server as well.
 
+## Create challenge locally (for testing)
+
+1. Use this repository as [template](https://docs.github.com/en/free-pro-team@latest/github/creating-cloning-and-archiving-repositories/creating-a-repository-from-a-template).
+
+2. Now, go to [EvalAI](http://127.0.0.1:8888/) to fetch the following details -
+   1. `evalai_user_auth_token` - Go to [profile page](https://eval.ai/web/profile) after logging in and click on `Get your Auth Token` to copy your auth token.
+   2. `host_team_pk` - Go to [host team page](https://eval.ai/web/challenge-host-teams) and copy the `ID` for the team you want to use for challenge creation.
+   3. `evalai_host_url` - Use `http://localhost:8000` 
+
+3. Run the following command from root directory
+    `python local/challenge_processing_script.py`
+
+4. If challenge config contains errors then you will get the issues on terminal otherwise the challenge will be created on EvalAI.
+
+5. Go to [Hosted Challenges](http://127.0.0.1:8888/web/hosted-challenges) to view your challenge. The challenge can be approved locally by following [here](https://evalai.readthedocs.io/en/latest/approve_challenge.html).
+
+6. To update the challenge locally, make changes in the repository and repeat step 3.
+
 ## Facing problems in creating a challenge?
 
 Please feel free to open issues on our [GitHub Repository](https://github.com/Cloud-CV/EvalAI-Starter/issues) or contact us at team@cloudcv.org if you have issues.

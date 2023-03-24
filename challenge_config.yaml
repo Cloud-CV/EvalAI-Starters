@@ -1,7 +1,7 @@
 # If you are not sure what all these fields mean, please refer our documentation here:
 # https://evalai.readthedocs.io/en/latest/configuration.html
-title: Random Number Generator Challenge
-short_description: Random number generation challenge for each submission
+title: Testing Out EvalAI
+short_description: Just Testing Out EvalAI
 description: templates/description.html
 evaluation_details: templates/evaluation_details.html
 terms_and_conditions: templates/terms_and_conditions.html
@@ -22,11 +22,11 @@ leaderboard:
         "labels": ["Metric1", "Metric2", "Metric3", "Total"],
         "default_order_by": "Total",
         "metadata": {
-          "Metric1": {
+          "Speed": {
             "sort_ascending": True,
             "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
           },
-          "Metric2": {
+          "Time Completion": {
             "sort_ascending": True,
             "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
           }

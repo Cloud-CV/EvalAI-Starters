@@ -115,6 +115,46 @@ challenge_phases:
         type: boolean
     is_restricted_to_select_one_submission: False
     is_partial_submission_evaluation_enabled: False
+- id: 3
+  name: Registration Phase
+  description: templates/challenge_phase_2_description.html
+  leaderboard_public: True
+  is_public: True
+  is_submission_public: True
+  start_date: 2019-01-01 00:00:00
+  end_date: 2099-05-24 23:59:59
+  test_annotation_file: annotations/test_annotations_testsplit.json
+  codename: test
+  max_submissions_per_day: 5
+  max_submissions_per_month: 50
+  max_submissions: 50
+  default_submission_meta_attributes:
+    - name: method_name
+      is_visible: True
+    - name: method_description
+      is_visible: True
+    - name: project_url
+      is_visible: True
+    - name: publication_url
+      is_visible: True
+  submission_meta_attributes:
+    - name: TextAttribute
+      description: Sample
+      type: text
+    - name: SingleOptionAttribute
+      description: Sample
+      type: radio
+      options: ["A", "B", "C"]
+    - name: MultipleChoiceAttribute
+      description: Sample
+      type: checkbox
+      options: ["alpha", "beta", "gamma"]
+    - name: TrueFalseField
+      description: Sample
+      type: boolean
+  is_restricted_to_select_one_submission: False
+  is_partial_submission_evaluation_enabled: False
+  allowed_submission_file_types: "*"
 
 dataset_splits:
   - id: 1

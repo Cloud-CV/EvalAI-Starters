@@ -58,7 +58,7 @@ challenge_phases:
         is_visible: True
     submission_meta_attributes:
       - name: TextAttribute
-        description: Sample
+        description: TEST BY LEO
         type: text
         required: False
       - name: SingleOptionAttribute

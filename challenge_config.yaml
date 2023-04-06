@@ -154,7 +154,6 @@ challenge_phases:
         type: boolean
     is_restricted_to_select_one_submission: False
     is_partial_submission_evaluation_enabled: False
-    allowed_submission_file_types: ""
     
 dataset_splits:
   - id: 1

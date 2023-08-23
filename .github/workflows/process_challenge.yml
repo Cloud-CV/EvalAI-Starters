@@ -3,11 +3,9 @@
 
 name: evalai-challenge
 on:
-  push:
-    branches: [challenge]
+  push: {}
   pull_request:
     types: [opened, synchronize, reopened, edited]
-    branches: [challenge]
 jobs:
   build:
     runs-on: ubuntu-20.04
@@ -23,14 +21,14 @@ jobs:
           if [ -f github/requirements.txt ]; then pip install -r github/requirements.txt; fi
       - name: Validate challenge
         run: |
-          python3 github/challenge_processing_script.py
+          python3 github/challenge_processing_script.py ${GITHUB_REF#refs/heads/}
         env:
           IS_VALIDATION: 'True'
           GITHUB_CONTEXT: ${{ toJson(github) }}
           GITHUB_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
       - name: Create or update challenge
         run: |
-          python3 github/challenge_processing_script.py
+          python3 github/challenge_processing_script.py ${GITHUB_REF#refs/heads/}
         if: ${{github.event_name == 'push' && success()}}
         env:
           IS_VALIDATION: 'False'

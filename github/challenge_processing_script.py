@@ -62,7 +62,12 @@ if __name__ == "__main__":
     zip_file = open(CHALLENGE_ZIP_FILE_PATH, "rb")
     file = {"zip_configuration": zip_file}
 
-    data = {"GITHUB_REPOSITORY": GITHUB_REPOSITORY}
+    github_branch = sys.argv[1] if len(sys.argv) > 1 else "challenge"
+
+    data = {
+        "GITHUB_REPOSITORY": "ssss",
+        "GITHUB_BRANCH": github_branch,
+    }
 
     try:
         response = requests.post(url, data=data, headers=headers, files=file)

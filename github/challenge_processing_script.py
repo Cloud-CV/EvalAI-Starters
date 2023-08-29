@@ -65,7 +65,7 @@ if __name__ == "__main__":
     github_branch = sys.argv[1] if len(sys.argv) > 1 else "challenge"
 
     data = {
-        "GITHUB_REPOSITORY": "ssss",
+        "GITHUB_REPOSITORY": GITHUB_REPOSITORY,
         "GITHUB_BRANCH": github_branch,
     }
 

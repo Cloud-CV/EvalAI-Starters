@@ -1,18 +1,18 @@
 # If you are not sure what all these fields mean, please refer our documentation here:
 # https://evalai.readthedocs.io/en/latest/configuration.html
-title: Random Number Generator Challenge
-short_description: Random number generation challenge for each submission
+title: V3Det Challenge 2024 - Vast Vocabulary Visual Detection
+short_description: Join the V3Det Challenge 2024 - Vast Vocabulary Visual Detection, and push the boundaries of object detection! Explore the rich diversity and endless possibilities of the V3Det dataset.
 description: templates/description.html
 evaluation_details: templates/evaluation_details.html
 terms_and_conditions: templates/terms_and_conditions.html
-image: logo.jpg
+image: V3Det.png
 submission_guidelines: templates/submission_guidelines.html
-leaderboard_description: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras egestas a libero nec sagittis.
+leaderboard_description: Explore the frontiers of object detection in the V3Det Challenge 2024. Witness innovation and precision as global contenders navigate through a vast vocabulary of visual categories.
 evaluation_script: evaluation_script.zip
-remote_evaluation: False
+remote_evaluation: True
 is_docker_based: False
-start_date: 2029-01-01 00:00:00
-end_date: 2099-05-31 23:59:59
+start_date: 2024-03-30 00:00:00
+end_date: 2024-05-31 23:59:59
 published: True
 
 leaderboard:
@@ -51,18 +51,18 @@ leaderboard:
 
 challenge_phases:
   - id: 1
-    name: Dev Phase
+    name: Development Phase
     description: templates/challenge_phase_1_description.html
-    leaderboard_public: False
+    leaderboard_public: True
     is_public: True
     is_submission_public: True
-    start_date: 2019-01-19 00:00:00
-    end_date: 2099-04-25 23:59:59
+    start_date: 2024-03-19 00:00:00
+    end_date: 2024-05-31 23:59:59
     test_annotation_file: annotations/test_annotations_devsplit.json
     codename: dev
-    max_submissions_per_day: 5
-    max_submissions_per_month: 50
-    max_submissions: 50
+    max_submissions_per_day: 50
+    max_submissions_per_month: 5000
+    max_submissions: 50000
     default_submission_meta_attributes:
       - name: method_name
         is_visible: True
@@ -93,18 +93,18 @@ challenge_phases:
     is_partial_submission_evaluation_enabled: False
     allowed_submission_file_types: ".json, .zip, .txt, .tsv, .gz, .csv, .h5, .npy, .npz"
   - id: 2
-    name: Test Phase
+    name: Technical Report Submission Phase
     description: templates/challenge_phase_2_description.html
     leaderboard_public: True
     is_public: True
     is_submission_public: True
-    start_date: 2019-01-01 00:00:00
-    end_date: 2099-05-24 23:59:59
+    start_date: 2024-06-01 00:00:00
+    end_date: 2024-06-07 23:59:59
     test_annotation_file: annotations/test_annotations_testsplit.json
     codename: test
-    max_submissions_per_day: 5
-    max_submissions_per_month: 50
-    max_submissions: 50
+    max_submissions_per_day: 50
+    max_submissions_per_month: 5000
+    max_submissions: 50000
     default_submission_meta_attributes:
       - name: method_name
         is_visible: True
@@ -131,7 +131,7 @@ challenge_phases:
         type: boolean
     is_restricted_to_select_one_submission: False
     is_partial_submission_evaluation_enabled: False
-
+    
 dataset_splits:
   - id: 1
     name: OVD

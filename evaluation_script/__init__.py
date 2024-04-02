@@ -22,12 +22,12 @@ def install(package):
             "install",
             package
         ])
-    except subprocess.CalledProcessError as e:
-        print("Error installing package:", e)
     except FileNotFoundError:
         print("Error: Pip not found.")
     except PermissionError:
         print("Error: Permission denied. ")
+    except subprocess.CalledProcessError as e:
+        print("Error installing package:", e)
 
 def install_local_package(folder_name):
     # Install a local python package
@@ -45,12 +45,12 @@ def install_local_package(folder_name):
             os.path.join(str(Path(__file__).parent.absolute()) + folder_name),
         ]
     )
-    except subprocess.CalledProcessError as e:
-        print("Error installing local package:", e)
     except FileNotFoundError:
         print("Error: Pip not found.")
     except PermissionError:
         print("Error: Permission denied. ")
+    except subprocess.CalledProcessError as e:
+        print("Error installing local package:", e)
 
 
 install("shapely==1.7.1")

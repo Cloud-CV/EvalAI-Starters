@@ -13,25 +13,45 @@ def install(package):
 
     # Args:
     #     package ([str]): Package name with version
-    
-    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
 
+    try:
+        subprocess.check_call([
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            package
+        ])
+    except subprocess.CalledProcessError as e:
+        print("Error installing package:", e)
+    except FileNotFoundError:
+        print("Error: Pip not found.")
+    except PermissionError:
+        print("Error: Permission denied. ")
 
 def install_local_package(folder_name):
     # Install a local python package
 
     # Args:
     #     folder_name ([str]): name of the folder placed in evaluation_script/
-    
-    subprocess.check_output(
-    [
-        sys.executable,
-        "-m",
-        "pip",
-        "install",
-        os.path.join(str(Path(__file__).parent.absolute()) + folder_name),
-    ]
-)
+
+    try:
+        subprocess.check_output(
+        [
+           sys.executable,
+            "-m",
+            "pip",
+            "install",
+            os.path.join(str(Path(__file__).parent.absolute()) + folder_name),
+        ]
+    )
+    except subprocess.CalledProcessError as e:
+        print("Error installing local package:", e)
+    except FileNotFoundError:
+        print("Error: Pip not found.")
+    except PermissionError:
+        print("Error: Permission denied. ")
+
 
 install("shapely==1.7.1")
 install("requests==2.25.1")

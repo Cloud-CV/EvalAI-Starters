@@ -10,7 +10,6 @@ submission_guidelines: templates/submission_guidelines.html
 leaderboard_description: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras egestas a libero nec sagittis.
 evaluation_script: evaluation_script.zip
 remote_evaluation: False
-is_docker_based: False
 start_date: 2019-01-01 00:00:00
 end_date: 2099-05-31 23:59:59
 published: True

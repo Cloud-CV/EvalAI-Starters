@@ -1,8 +1,20 @@
 import random
-
+import logging
+import time
+import sys
 
 def evaluate(test_annotation_file, user_submission_file, phase_codename, **kwargs):
     print("Starting Evaluation.....")
+
+    eval_script_logger = logging.getLogger(name='eval_script')
+    eval_script_logger.setLevel(logging.DEBUG)
+
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    eval_script_logger.addHandler(handler)
+
     """
     Evaluates the submission for a particular challenge phase and returns score
     Arguments:
@@ -54,7 +66,7 @@ def evaluate(test_annotation_file, user_submission_file, phase_codename, **kwarg
         ]
         # To display the results in the result file
         output["submission_result"] = output["result"][0]["train_split"]
-        print("Completed evaluation for Dev Phase")
+        eval_script_logger.info("Completed evaluation for Dev Phase")
     elif phase_codename == "test":
         print("Evaluating for Test Phase")
         output["result"] = [
@@ -77,5 +89,5 @@ def evaluate(test_annotation_file, user_submission_file, phase_codename, **kwarg
         ]
         # To display the results in the result file
         output["submission_result"] = output["result"][0]
-        print("Completed evaluation for Test Phase")
+        eval_script_logger.info("Completed evaluation for Test Phase")
     return output

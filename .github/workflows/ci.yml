@@ -22,7 +22,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install requests pyyaml
+        pip install requests pyyaml PyGithub
 
     - name: Validate challenge configuration using EvalAI API
       env:

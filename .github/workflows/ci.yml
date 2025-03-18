@@ -33,3 +33,4 @@ jobs:
         GITHUB_CONTEXT: ${{ toJSON(github) }}
       run: |
         python github/challenge_processing_script.py
+        

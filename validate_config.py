@@ -58,7 +58,7 @@ SCHEMA = {
 
 def validate_config():
     try:
-        with open("challenge_config.yml") as f:
+        with open("challenge_config.yaml") as f:
             config = yaml.safe_load(f)
         
         validate(instance=config, schema=SCHEMA)

@@ -29,7 +29,7 @@ jobs:
         GITHUB_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         HOST_AUTH_TOKEN: ${{ secrets.EVALAI_AUTH_TOKEN }}
         CHALLENGE_HOST_TEAM_PK: ${{ secrets.CHALLENGE_HOST_TEAM_PK }}
-        EVALAI_HOST_URL: ${{ secrets.EVALAI_HOST_URL }}
+        EVALAI_HOST_URL: https://${{ secrets.EVALAI_HOST_URL }}
         GITHUB_CONTEXT: ${{ toJSON(github) }}
       run: |
         python github/challenge_processing_script.py

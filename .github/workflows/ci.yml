@@ -32,9 +32,4 @@ jobs:
         EVALAI_HOST_URL: ${{ secrets.EVALAI_HOST_URL }}
         GITHUB_CONTEXT: ${{ toJSON(github) }}
       run: |
-        echo "EVALAI_HOST_URL: ${EVALAI_HOST_URL}"
-        echo "CHALLENGE_HOST_TEAM_PK: ${CHALLENGE_HOST_TEAM_PK}"
-        echo "GITHUB_CONTEXT: ${GITHUB_CONTEXT}"
-        echo "GITHUB_AUTH_TOKEN: ${AUTH_TOKEN}"
-        echo "HOST_AUTH_TOKEN: ${EVALAI_AUTH_TOKEN}"
         python github/challenge_processing_script.py

@@ -1,4 +1,4 @@
-name: EvalAI Starter CI
+name: Challenge Config Validation
 
 on:
   pull_request:
@@ -7,43 +7,22 @@ on:
     branches: [master]
 
 jobs:
-  validation:
+  validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+          
+      - name: Install dependencies
+        run: pip install requests
 
-    - name: Validate environment variables
-      run: |
-        if [ -z "${{ secrets.EVALAI_HOST_URL }}" ]; then
-          echo "::error::EVALAI_HOST_URL secret is missing"
-          exit 1
-        fi
-        if [[ ! "${{ secrets.EVALAI_HOST_URL }}" =~ ^https?:// ]]; then
-          echo "::error::EVALAI_HOST_URL must start with http:// or https://"
-          exit 1
-        fi
-
-    - name: Set up Python 3.13
-      uses: actions/setup-python@v5
-      with:
-        python-version: 3.13
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install requests pyyaml PyGithub
-
-    - name: Validate challenge configuration using EvalAI API
-      env:
-        GITHUB_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
-        HOST_AUTH_TOKEN: ${{ secrets.EVALAI_AUTH_TOKEN }}
-        CHALLENGE_HOST_TEAM_PK: ${{ secrets.CHALLENGE_HOST_TEAM_PK }}
-        EVALAI_HOST_URL: ${{ secrets.EVALAI_HOST_URL }}
-        GITHUB_CONTEXT: ${{ toJSON(github) }}
-      run: |
-        echo "Validating challenge configuration..."
-        echo "API Endpoint: ${EVALAI_HOST_URL}/api/challenges/challenge/challenge_host_team/${CHALLENGE_HOST_TEAM_PK}/create_or_update_github_challenge/"
-        python github/challenge_processing_script.py
+      - name: Validate challenge config
+        env:
+          EVALAI_AUTH_TOKEN: ${{ secrets.EVALAI_AUTH_TOKEN }}
+          CHALLENGE_HOST_TEAM_PK: ${{ secrets.CHALLENGE_HOST_TEAM_PK }}
+        run: |
+          python github/validate_challenge_config.py

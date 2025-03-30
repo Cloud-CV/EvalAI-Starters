@@ -5,28 +5,8 @@ import zipfile
 from config import (
     CHALLENGE_CONFIG_VALIDATION_URL,
     API_HOST_URL,
-    IGNORE_DIRS,
-    IGNORE_FILES,
     CHALLENGE_ZIP_FILE_PATH
 )
-
-def create_challenge_zip():
-    """Create ZIP file of challenge configuration"""
-    try:
-        with zipfile.ZipFile(CHALLENGE_ZIP_FILE_PATH, 'w') as zipf:
-            for root, dirs, files in os.walk('.'):
-                dirs[:] = [d for d in dirs if d not in IGNORE_DIRS]
-                
-                for file in files:
-                    if file in IGNORE_FILES:
-                        continue
-                    file_path = os.path.join(root, file)
-                    zipf.write(file_path, os.path.relpath(file_path, '.'))
-        return True
-    except Exception as e:
-        print(f"🔥 Failed to create ZIP file: {str(e)}")
-        return False
-
 def validate_config():
     try:
         host_team_pk = os.getenv("CHALLENGE_HOST_TEAM_PK")

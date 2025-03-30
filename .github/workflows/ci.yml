@@ -18,11 +18,12 @@ jobs:
           python-version: 3.9
           
       - name: Install dependencies
-        run: pip install requests
+        run: pip install requests PyGithub
 
       - name: Validate challenge config
         env:
           EVALAI_AUTH_TOKEN: ${{ secrets.EVALAI_AUTH_TOKEN }}
           CHALLENGE_HOST_TEAM_PK: ${{ secrets.CHALLENGE_HOST_TEAM_PK }}
+          GITHUB_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
         run: |
           python github/validate_challenge_config.py

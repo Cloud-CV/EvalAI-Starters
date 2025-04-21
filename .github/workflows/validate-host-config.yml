@@ -1,0 +1,47 @@
+name: Validate host_config.json
+
+on:
+  push:
+    paths:
+      - 'host_config.json'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Validate host_config.json
+        id: validate
+        run: |
+          if ! [ -f "host_config.json" ]; then
+            echo "host_config.json not found"
+            echo "invalid=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          TOKEN=$(jq -r '.token' host_config.json)
+          TEAM_PK=$(jq -r '.team_pk' host_config.json)
+          HOST_URL=$(jq -r '.evalai_host_url' host_config.json)
+
+          if [[ "$TOKEN" == "<evalai_user_auth_token>" || \
+                "$TEAM_PK" == "<host_team_pk>" || \
+                "$HOST_URL" == "<evalai_host_url>" ]]; then
+            echo "Invalid placeholders found"
+            echo "invalid=true" >> $GITHUB_OUTPUT
+          else
+            echo "All values are valid"
+            echo "invalid=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create issue if invalid
+        if: steps.validate.outputs.invalid == 'true'
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: "host_config.json needs real credentials"
+          content-file: .github/issue_templates/invalid_host_config.md
+          labels: |
+            bug
+            config

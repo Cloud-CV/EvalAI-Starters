@@ -2,6 +2,8 @@ name: Validate host_config.json
 
 on:
   push:
+    branches:
+      - challenge
     paths:
       - 'host_config.json'
   workflow_dispatch:
@@ -41,7 +43,8 @@ jobs:
         uses: peter-evans/create-issue-from-file@v4
         with:
           title: "host_config.json needs real credentials"
-          content-file: .github/issue_templates/invalid_host_config.md
+          content-filepath: .github/issue_templates/invalid_host_config.md
           labels: |
             bug
             config
+

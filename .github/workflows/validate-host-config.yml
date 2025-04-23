@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - challenge
-    paths:
-      - 'host_config.json'
   workflow_dispatch:
 
 jobs:
@@ -18,15 +16,15 @@ jobs:
       - name: Validate host_config.json
         id: validate
         run: |
-          if ! [ -f "host_config.json" ]; then
-            echo "host_config.json not found"
+          if ! [ -f "github/host_config.json" ]; then
+            echo "host_config.json not found in github/ directory"
             echo "invalid=true" >> $GITHUB_OUTPUT
             exit 0
           fi
 
-          TOKEN=$(jq -r '.token' host_config.json)
-          TEAM_PK=$(jq -r '.team_pk' host_config.json)
-          HOST_URL=$(jq -r '.evalai_host_url' host_config.json)
+          TOKEN=$(jq -r '.token' github/host_config.json)
+          TEAM_PK=$(jq -r '.team_pk' github/host_config.json)
+          HOST_URL=$(jq -r '.evalai_host_url' github/host_config.json)
 
           if [[ "$TOKEN" == "<evalai_user_auth_token>" || \
                 "$TEAM_PK" == "<host_team_pk>" || \
@@ -47,4 +45,5 @@ jobs:
           labels: |
             bug
             config
-
+  call-evalai-challenge:
+    uses: ./.github/workflows/process_challenge.yml      

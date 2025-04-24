@@ -3,11 +3,8 @@
 
 name: evalai-challenge
 on:
-  push:
-    branches: [challenge]
-  pull_request:
-    types: [opened, synchronize, reopened, edited]
-    branches: [challenge]
+  workflow_call:
+
 jobs:
   build:
     runs-on: ubuntu-22.04

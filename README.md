@@ -84,6 +84,15 @@ In order to test the evaluation script locally before uploading it to [EvalAI](h
 
 3. Run the command `python -m worker.run` from the directory where `annotations/` `challenge_data/` and `worker/` directories are present. If the command runs successfully, then the evaluation script works locally and will work on the server as well.
 
+## Important Note
+`host_config.json` file includes default placeholders like:
+
+- `<evalai_user_auth_token>`
+- `<host_team_pk>`
+- `<evalai_host_url>`
+
+Please replace them with real values before pushing changes to avoid build errors.
+
 ## Facing problems in creating a challenge?
 
 Please feel free to open issues on our [GitHub Repository](https://github.com/Cloud-CV/EvalAI-Starter/issues) or contact us at team@cloudcv.org if you have issues.

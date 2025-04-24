@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - challenge
+    paths:
+      - 'host_config.json'
   workflow_dispatch:
 
 jobs:

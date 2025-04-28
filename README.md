@@ -62,18 +62,6 @@ If you are looking for a simple challenge configuration that you can replicate t
 
 11. To update the challenge on EvalAI, make changes in the repository and push on `challenge` branch and wait for the build to complete.
 
-## Create challenge using config
-
-1. Fork this repository.
-
-2. Read [EvalAI challenge creation documentation](https://evalai.readthedocs.io/en/latest/configuration.html) to know more about how you want to structure your challenge. Once you are ready, start making changes in the yaml file, HTML templates, evaluation script according to your need.
-
-3. Once you are done making changes, run the command `./run.sh` to generate the `challenge_config.zip`.
-
-4. Upload the `challenge_config.zip` on [EvalAI](https://eval.ai) to create a challenge on EvalAI. Challenge will be available publicly once EvalAI Admin approves the challenge.
-
-5. To update the challenge on EvalAI, use the UI to update the details.
-
 ## Test your evaluation script locally
 
 In order to test the evaluation script locally before uploading it to [EvalAI](https://eval.ai) server, please follow the below instructions -

@@ -93,6 +93,19 @@ In order to test the evaluation script locally before uploading it to [EvalAI](h
 
 Please replace them with real values before pushing changes to avoid build errors.
 
+## Updating your evaluation script
+
+In order to update the evaluation script after creating a challenge please follow the below instructions -
+
+1. Go to the hosted challenges [pag](https://eval.ai/web/hosted-challenges).
+
+2. Select the challenge for which you want to update the evaluation script.
+
+3. Go to the `Evaluation` tab and click on `Upload` button.
+
+4. Upload the new evaluation script and click on `Submit` button. Once the evaluation script is submitted the evaluation workers will automatically restart to sync the latest changes. You can check the status on `Manage` tab of the challenge page.
+
+
 ## Facing problems in creating a challenge?
 
 Please feel free to open issues on our [GitHub Repository](https://github.com/Cloud-CV/EvalAI-Starter/issues) or contact us at team@cloudcv.org if you have issues.

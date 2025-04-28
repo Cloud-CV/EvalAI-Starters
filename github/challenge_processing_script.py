@@ -35,6 +35,10 @@ EVALAI_HOST_URL = None
 
 if __name__ == "__main__":
 
+    if GITHUB_CONTEXT["event"]["head_commit"]["message"].startswith("evalai_bot"):
+        print("Sync from Evalai")
+        sys.exit(0)
+
     configs = load_host_configs(HOST_CONFIG_FILE_PATH)
     if configs:
         HOST_AUTH_TOKEN = configs[0]
@@ -62,7 +66,10 @@ if __name__ == "__main__":
     zip_file = open(CHALLENGE_ZIP_FILE_PATH, "rb")
     file = {"zip_configuration": zip_file}
 
-    data = {"GITHUB_REPOSITORY": GITHUB_REPOSITORY}
+    data = {
+        "GITHUB_REPOSITORY": GITHUB_REPOSITORY,
+        "GITHUB_AUTH_TOKEN": GITHUB_AUTH_TOKEN,
+    }
 
     try:
         response = requests.post(url, data=data, headers=headers, files=file)

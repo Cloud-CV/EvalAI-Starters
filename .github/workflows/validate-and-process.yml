@@ -1,0 +1,104 @@
+name: Validate and Process EvalAI Challenge
+
+on:
+  push:
+    branches:
+      - challenge
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  validate-host-config:
+    runs-on: ubuntu-latest
+    outputs:
+      is_valid: ${{ steps.validate.outputs.is_valid }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Validate host_config.json
+        id: validate
+        run: |
+          echo "is_valid=true" >> $GITHUB_OUTPUT
+          echo "" > validation_error.log
+
+          if ! [ -f "github/host_config.json" ]; then
+            echo "❌ host_config.json not found in github/ directory" | tee -a validation_error.log
+            echo "is_valid=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          TOKEN=$(jq -r '.token' github/host_config.json)
+          TEAM_PK=$(jq -r '.team_pk' github/host_config.json)
+          HOST_URL=$(jq -r '.evalai_host_url' github/host_config.json)
+
+          if [[ -z "$TOKEN" || "$TOKEN" == "<evalai_user_auth_token>" ]]; then
+            echo "❌ Invalid or missing token" | tee -a validation_error.log
+            echo "is_valid=false" >> $GITHUB_OUTPUT
+          fi
+
+          if [[ -z "$TEAM_PK" || "$TEAM_PK" == "<host_team_pk>" ]]; then
+            echo "❌ Invalid or missing team_pk" | tee -a validation_error.log
+            echo "is_valid=false" >> $GITHUB_OUTPUT
+          fi
+
+          if [[ -z "$HOST_URL" || "$HOST_URL" == "<evalai_host_url>" ]]; then
+            echo "❌ Invalid or missing evalai_host_url" | tee -a validation_error.log
+            echo "is_valid=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create issue if invalid
+        if: steps.validate.outputs.is_valid == 'false'
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: "host_config.json validation failed"
+          content-filepath: validation_error.log
+          labels: |
+            bug
+            config
+
+      - name: Fail job if invalid
+        if: steps.validate.outputs.is_valid == 'false'
+        run: |
+          echo "❌ host_config.json validation failed. See issue for details."
+          exit 1
+
+
+  process-evalai-challenge:
+    needs: validate-host-config
+    if: needs.validate-host-config.outputs.is_valid == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout challenge branch
+        uses: actions/checkout@v3
+        with:
+          ref: challenge
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9.21
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f github/requirements.txt ]; then pip install -r github/requirements.txt; fi
+
+      - name: Validate challenge
+        run: |
+          python3 github/challenge_processing_script.py
+        env:
+          IS_VALIDATION: 'True'
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+          GITHUB_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+
+      - name: Create or update challenge
+        run: |
+          python3 github/challenge_processing_script.py
+        if: ${{ success() }}
+        env:
+          IS_VALIDATION: 'False'
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+          GITHUB_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}

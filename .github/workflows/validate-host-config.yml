@@ -1,15 +1,17 @@
-name: Validate host_config.json
+name: Validate Host Config
 
 on:
   push:
     branches:
       - challenge
-    paths:
-      - 'host_config.json'
-  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
 
 jobs:
-  validate:
+  validate-host-config:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -21,25 +23,36 @@ jobs:
           if ! [ -f "github/host_config.json" ]; then
             echo "host_config.json not found in github/ directory"
             echo "invalid=true" >> $GITHUB_OUTPUT
-            exit 0
+            exit 1
           fi
 
           TOKEN=$(jq -r '.token' github/host_config.json)
           TEAM_PK=$(jq -r '.team_pk' github/host_config.json)
           HOST_URL=$(jq -r '.evalai_host_url' github/host_config.json)
 
-          if [[ "$TOKEN" == "<evalai_user_auth_token>" || \
-                "$TEAM_PK" == "<host_team_pk>" || \
-                "$HOST_URL" == "<evalai_host_url>" ]]; then
-            echo "Invalid placeholders found"
+          if [[ -z "$TOKEN" || "$TOKEN" == "<evalai_user_auth_token>" ]]; then
+            echo "Invalid or missing token"
             echo "invalid=true" >> $GITHUB_OUTPUT
-          else
-            echo "All values are valid"
-            echo "invalid=false" >> $GITHUB_OUTPUT
+            exit 1
           fi
 
+          if [[ -z "$TEAM_PK" || "$TEAM_PK" == "<host_team_pk>" ]]; then
+            echo "Invalid or missing team_pk"
+            echo "invalid=true" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          if [[ -z "$HOST_URL" || "$HOST_URL" == "<evalai_host_url>" ]]; then
+            echo "Invalid or missing evalai_host_url"
+            echo "invalid=true" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          echo "All values are valid"
+          echo "invalid=false" >> $GITHUB_OUTPUT
+
       - name: Create issue if invalid
-        if: steps.validate.outputs.invalid == 'true'
+        if: failure()
         uses: peter-evans/create-issue-from-file@v4
         with:
           title: "host_config.json needs real credentials"
@@ -47,5 +60,3 @@ jobs:
           labels: |
             bug
             config
-  call-evalai-challenge:
-    uses: ./.github/workflows/process_challenge.yml      

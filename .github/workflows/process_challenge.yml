@@ -1,23 +1,28 @@
-# This workflow will install Python dependencies, run tests and lint with a single version of Python
-# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+name: Process EvalAI Challenge
 
-name: evalai-challenge
 on:
-  workflow_call:
+  workflow_run:
+    workflows: ["Validate Host Config"]
+    types:
+      - completed
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: 3.9.21
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           if [ -f github/requirements.txt ]; then pip install -r github/requirements.txt; fi
+
       - name: Validate challenge
         run: |
           python3 github/challenge_processing_script.py
@@ -25,10 +30,11 @@ jobs:
           IS_VALIDATION: 'True'
           GITHUB_CONTEXT: ${{ toJson(github) }}
           GITHUB_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+
       - name: Create or update challenge
         run: |
           python3 github/challenge_processing_script.py
-        if: ${{github.event_name == 'push' && success()}}
+        if: ${{ success() }}
         env:
           IS_VALIDATION: 'False'
           GITHUB_CONTEXT: ${{ toJson(github) }}

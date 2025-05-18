@@ -177,7 +177,7 @@ def validate_token(response):
             print(error)
             os.environ["CHALLENGE_ERRORS"] = error
             return False
-        if response.get("code") == "token_not_valid":
+        if response["detail"] == "Given token not valid for any token type":
             error = "\nThe token is invalid or expired. Please generate it again.\n"
             print(error)
             os.environ["CHALLENGE_ERRORS"] = error

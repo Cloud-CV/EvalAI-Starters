@@ -61,6 +61,9 @@ If you are looking for a simple challenge configuration that you can replicate t
 
 11. To update the challenge on EvalAI, make changes in the repository and push on `challenge` branch and wait for the build to complete.
 
+## Add custom dependencies for evaluation (Optional)
+To add custom dependency packages in the evaluation script, refer to [this guide](./evaluation_script/dependency-installation.md).
+
 ## Test your evaluation script locally
 
 In order to test the evaluation script locally before uploading it to [EvalAI](https://eval.ai) server, please follow the below instructions -

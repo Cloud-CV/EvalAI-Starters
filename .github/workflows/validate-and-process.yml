@@ -1,9 +1,9 @@
 name: Validate and Process EvalAI Challenge
 
 on:
-  push:
-    branches:
-      - challenge
+  push: {}
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
 
 permissions:
   contents: read
@@ -74,7 +74,7 @@ jobs:
       - name: Checkout challenge branch
         uses: actions/checkout@v3
         with:
-          ref: challenge
+          ref: ${{ github.ref_name }}
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -88,7 +88,7 @@ jobs:
 
       - name: Validate challenge
         run: |
-          python3 github/challenge_processing_script.py
+          python3 github/challenge_processing_script.py ${GITHUB_REF#refs/heads/}
         env:
           IS_VALIDATION: 'True'
           GITHUB_CONTEXT: ${{ toJson(github) }}
@@ -96,8 +96,8 @@ jobs:
 
       - name: Create or update challenge
         run: |
-          python3 github/challenge_processing_script.py
-        if: ${{ success() }}
+          python3 github/challenge_processing_script.py ${GITHUB_REF#refs/heads/}
+        if: ${{ github.event_name == 'push' && success() }}
         env:
           IS_VALIDATION: 'False'
           GITHUB_CONTEXT: ${{ toJson(github) }}

@@ -17,7 +17,6 @@ jobs:
     outputs:
       is_challenge_branch: ${{ steps.branch-check.outputs.is_challenge_branch }}
       challenge_branch: ${{ steps.branch-check.outputs.challenge_branch }}
-      branch_suffix: ${{ steps.branch-check.outputs.branch_suffix }}
     steps:
       - name: Detect and validate challenge branch
         id: branch-check

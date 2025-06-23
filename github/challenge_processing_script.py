@@ -3,6 +3,7 @@ import json
 import os
 import requests
 import sys
+import argparse
 
 from config import *
 from utils import (
@@ -31,6 +32,15 @@ if not GITHUB_AUTH_TOKEN:
 HOST_AUTH_TOKEN = None
 CHALLENGE_HOST_TEAM_PK = None
 EVALAI_HOST_URL = None
+
+parser = argparse.ArgumentParser(
+    description="Validate or create/update challenge on EvalAI"
+)
+parser.add_argument("branch_name", nargs="?", default=None, help="Name of the git branch whose configuration is being processed")
+
+args = parser.parse_args()
+
+
 
 
 if __name__ == "__main__":
@@ -62,7 +72,11 @@ if __name__ == "__main__":
     zip_file = open(CHALLENGE_ZIP_FILE_PATH, "rb")
     file = {"zip_configuration": zip_file}
 
+    # Add the branch name (if provided) so that EvalAI can distinguish between multiple
+    # versions of the challenge present in the same repository.
     data = {"GITHUB_REPOSITORY": GITHUB_REPOSITORY}
+    if args.branch_name:
+        data["BRANCH_NAME"] = args.branch_name
 
     try:
         response = requests.post(url, data=data, headers=headers, files=file)

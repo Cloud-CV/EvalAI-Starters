@@ -4,12 +4,54 @@ on:
   push: {}
   pull_request:
     types: [opened, synchronize, reopened, edited]
+    branches:
+      - 'challenge'
 
 permissions:
   contents: read
   issues: write
 
 jobs:
+  detect-and-validate-challenge-branch:
+    runs-on: ubuntu-latest
+    outputs:
+      is_challenge_branch: ${{ steps.branch-check.outputs.is_challenge_branch }}
+      challenge_branch: ${{ steps.branch-check.outputs.challenge_branch }}
+      branch_suffix: ${{ steps.branch-check.outputs.branch_suffix }}
+    steps:
+      - name: Detect and validate challenge branch
+        id: branch-check
+        run: |
+          # Get the actual branch name
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            BRANCH="${{ github.head_ref }}"
+          else
+            BRANCH="${{ github.ref_name }}"
+          fi
+          
+          echo "🔍 Analyzing branch: $BRANCH"
+          echo "challenge_branch=$BRANCH" >> $GITHUB_OUTPUT
+          
+          # Check if this is a challenge branch
+          if [[ "$BRANCH" =~ ^challenge(-.*)?$ ]]; then
+            echo "is_challenge_branch=true" >> $GITHUB_OUTPUT
+            echo "✅ Valid challenge branch detected: $BRANCH"
+            
+            # Extract branch suffix for versioning
+            if [[ "$BRANCH" =~ ^challenge-(.+)$ ]]; then
+              SUFFIX="${BASH_REMATCH[1]}"
+              echo "branch_suffix=$SUFFIX" >> $GITHUB_OUTPUT
+              echo "📋 Branch suffix: $SUFFIX"
+            else
+              echo "branch_suffix=main" >> $GITHUB_OUTPUT
+              echo "📋 Main challenge branch (no suffix)"
+            fi
+          else
+            echo "is_challenge_branch=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ Not a challenge branch: $BRANCH"
+            echo "⏭️ Challenge processing will be skipped"
+          fi
+
   validate-host-config:
     runs-on: ubuntu-latest
     outputs:

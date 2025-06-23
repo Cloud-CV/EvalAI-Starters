@@ -4,6 +4,7 @@ import os
 import requests
 import sys
 import argparse
+import re
 
 from config import *
 from utils import (
@@ -40,8 +41,28 @@ parser.add_argument("branch_name", nargs="?", default=None, help="Name of the gi
 
 args = parser.parse_args()
 
-
-
+# Enforce branch naming convention
+if args.branch_name and not re.match(r"^challenge(-.*)?$", args.branch_name):
+    print("Error: Branch name must start with 'challenge' (e.g., 'challenge', 'challenge-2024').")
+    sys.exit(1)
+def get_challenge_config_path(branch_name):
+    """
+    Get the appropriate challenge config file path based on branch name
+    """
+    if not branch_name or branch_name == "challenge":
+        return "challenge_config.yaml"
+    
+    # For branches like challenge-2024, challenge-v2, etc.
+    if branch_name.startswith("challenge-"):
+        suffix = branch_name.replace("challenge-", "")
+        branch_config = f"challenge_config_{suffix}.yaml"
+        
+        # Check if branch-specific config exists
+        if os.path.exists(branch_config):
+            return branch_config
+    
+    # Fallback to default config
+    return "challenge_config.yaml"
 
 if __name__ == "__main__":
 
@@ -52,6 +73,13 @@ if __name__ == "__main__":
         EVALAI_HOST_URL = configs[2]
     else:
         sys.exit(1)
+
+    # Get the appropriate challenge config based on branch
+    challenge_config_path = get_challenge_config_path(args.branch_name)
+    
+    # Update the global config path for zip file creation
+    import config
+    config.CHALLENGE_CONFIG_FILE_PATH = challenge_config_path
 
     # Fetching the url
     if VALIDATION_STEP == "True":

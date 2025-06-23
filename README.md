@@ -48,18 +48,22 @@ If you are looking for a simple challenge configuration that you can replicate t
 
 5. Create a branch with name `challenge` in the forked repository from the `master` branch.
 <span style="color:purple">Note: Only changes in `challenge` branch will be synchronized with challenge on EvalAI.</span>
+You may maintain multiple versions by using additional branches whose names start with `challenge-` (e.g. `challenge-2024`, `challenge-v2`).
+<span style="color:purple">Note: The CI pipeline only runs for branches that match the pattern `challenge` or `challenge-*`. Any other branch name will be ignored.</span>
+
+If you trigger the processing script manually and do **not** pass a branch argument, it will assume the branch name is `challenge` by default.
 
 6. Add `evalai_user_auth_token` and `host_team_pk` in `github/host_config.json`.
 
 7. Read [EvalAI challenge creation documentation](https://evalai.readthedocs.io/en/latest/configuration.html) to know more about how you want to structure your challenge. Once you are ready, start making changes in the yaml file, HTML templates, evaluation script according to your need.
 
-8. Commit the changes and push the `challenge` branch in the repository and wait for the build to complete. View the [logs of your build](https://docs.github.com/en/free-pro-team@latest/actions/managing-workflow-runs/using-workflow-run-logs#viewing-logs-to-diagnose-failures).
+8. Commit the changes and push the relevant `challenge*` branch to the repository and wait for the build to complete. View the [logs of your build](https://docs.github.com/en/free-pro-team@latest/actions/managing-workflow-runs/using-workflow-run-logs#viewing-logs-to-diagnose-failures).
 
-9. If challenge config contains errors then a `issue` will be opened automatically in the repository with the errors otherwise the challenge will be created on EvalAI.
+9. If the challenge config contains errors, a GitHub **Issue** will be opened automatically in the repository with the error details; otherwise the challenge will be created on EvalAI.
 
 10. Go to [Hosted Challenges](https://eval.ai/web/hosted-challenges) to view your challenge. The challenge will be publicly available once EvalAI admin approves the challenge.
 
-11. To update the challenge on EvalAI, make changes in the repository and push on `challenge` branch and wait for the build to complete.
+11. To update the challenge on EvalAI, make changes in the repository and push to the corresponding `challenge*` branch and wait for the build to complete.
 
 ## Add custom dependencies for evaluation (Optional)
 To add custom dependency packages in the evaluation script, refer to [this guide](./evaluation_script/dependency-installation.md).

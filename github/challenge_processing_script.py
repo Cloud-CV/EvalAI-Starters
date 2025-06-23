@@ -42,8 +42,11 @@ parser.add_argument("branch_name", nargs="?", default=None, help="Name of the gi
 
 args = parser.parse_args()
 
+# Determine effective branch name (default to "challenge" if none provided)
+branch_name = args.branch_name if args.branch_name else "challenge"
+
 # Enforce branch naming convention
-if args.branch_name and not re.match(r"^challenge(-.*)?$", args.branch_name):
+if not re.match(r"^challenge(-.*)?$", branch_name):
     print("Error: Branch name must start with 'challenge' (e.g., 'challenge', 'challenge-2024').")
     sys.exit(1)
 
@@ -83,8 +86,8 @@ if __name__ == "__main__":
     # Add the branch name (if provided) so that EvalAI can distinguish between multiple
     # versions of the challenge present in the same repository.
     data = {"GITHUB_REPOSITORY": GITHUB_REPOSITORY}
-    if args.branch_name:
-        data["BRANCH_NAME"] = args.branch_name
+    if branch_name:
+        data["BRANCH_NAME"] = branch_name
 
     try:
         response = requests.post(url, data=data, headers=headers, files=file)

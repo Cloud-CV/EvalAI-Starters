@@ -3,6 +3,7 @@ import json
 import os
 import requests
 import sys
+import urllib3
 
 from config import *
 from utils import (
@@ -33,6 +34,34 @@ CHALLENGE_HOST_TEAM_PK = None
 EVALAI_HOST_URL = None
 
 
+def is_localhost_url(url):
+    """
+    Check if the provided URL is a localhost URL
+    
+    Arguments:
+        url {str}: The URL to check
+    
+    Returns:
+        bool: True if it's a localhost URL, False otherwise
+    """
+    localhost_indicators = [
+        "127.0.0.1",
+        "localhost",
+        "0.0.0.0"
+    ]
+    return any(indicator in url.lower() for indicator in localhost_indicators)
+
+
+def configure_requests_for_localhost():
+    """
+    Configure requests and urllib3 for localhost development servers
+    This disables SSL warnings for self-signed certificates commonly used in development
+    """
+    # Disable SSL warnings for localhost development
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    print("INFO: SSL verification disabled for localhost development server")
+
+
 if __name__ == "__main__":
 
     configs = load_host_configs(HOST_CONFIG_FILE_PATH)
@@ -42,6 +71,12 @@ if __name__ == "__main__":
         EVALAI_HOST_URL = configs[2]
     else:
         sys.exit(1)
+
+    # Check if we're using a localhost server and configure accordingly
+    is_localhost = is_localhost_url(EVALAI_HOST_URL)
+    if is_localhost:
+        configure_requests_for_localhost()
+        print(f"INFO: Using localhost server: {EVALAI_HOST_URL}")
 
     # Fetching the url
     if VALIDATION_STEP == "True":
@@ -64,8 +99,11 @@ if __name__ == "__main__":
 
     data = {"GITHUB_REPOSITORY": GITHUB_REPOSITORY}
 
+    # Configure SSL verification based on whether we're using localhost
+    verify_ssl = not is_localhost
+
     try:
-        response = requests.post(url, data=data, headers=headers, files=file)
+        response = requests.post(url, data=data, headers=headers, files=file, verify=verify_ssl)
 
         if (
             response.status_code != http.HTTPStatus.OK

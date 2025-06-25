@@ -3,6 +3,9 @@ import json
 import os
 import requests
 import sys
+import argparse
+import re
+import config
 
 from config import *
 from utils import (
@@ -32,6 +35,20 @@ HOST_AUTH_TOKEN = None
 CHALLENGE_HOST_TEAM_PK = None
 EVALAI_HOST_URL = None
 
+parser = argparse.ArgumentParser(
+    description="Validate or create/update challenge on EvalAI"
+)
+parser.add_argument("branch_name", nargs="?", default=None, help="Name of the git branch whose configuration is being processed")
+
+args = parser.parse_args()
+
+# Determine effective branch name (default to "challenge" if none provided)
+branch_name = args.branch_name if args.branch_name else "challenge"
+
+# Enforce branch naming convention
+if not re.match(r"^challenge(-.*)?$", branch_name):
+    print("Error: Branch name must start with 'challenge' (e.g., 'challenge', 'challenge-2024').")
+    sys.exit(1)
 
 if __name__ == "__main__":
 
@@ -42,6 +59,10 @@ if __name__ == "__main__":
         EVALAI_HOST_URL = configs[2]
     else:
         sys.exit(1)
+
+    
+    # Update the global config path for zip file creation
+    config.CHALLENGE_CONFIG_FILE_PATH = "challenge_config.yaml"
 
     # Fetching the url
     if VALIDATION_STEP == "True":
@@ -62,7 +83,11 @@ if __name__ == "__main__":
     zip_file = open(CHALLENGE_ZIP_FILE_PATH, "rb")
     file = {"zip_configuration": zip_file}
 
+    # Add the branch name (if provided) so that EvalAI can distinguish between multiple
+    # versions of the challenge present in the same repository.
     data = {"GITHUB_REPOSITORY": GITHUB_REPOSITORY}
+    if branch_name:
+        data["BRANCH_NAME"] = branch_name
 
     try:
         response = requests.post(url, data=data, headers=headers, files=file)

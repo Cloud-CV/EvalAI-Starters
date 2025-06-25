@@ -29,6 +29,9 @@ if not GITHUB_AUTH_TOKEN:
     )
     sys.exit(1)
 
+# Clean up the GitHub token (remove any whitespace/newlines)
+GITHUB_AUTH_TOKEN = GITHUB_AUTH_TOKEN.strip()
+
 HOST_AUTH_TOKEN = None
 CHALLENGE_HOST_TEAM_PK = None
 EVALAI_HOST_URL = None
@@ -165,7 +168,21 @@ if __name__ == "__main__":
 
     is_valid, errors = check_for_errors()
     if not is_valid:
-        if VALIDATION_STEP == "True" and check_if_pull_request():
+        # Check if this is a localhost connection error - don't create GitHub issues for expected localhost failures
+        is_localhost_connection_error = (
+            is_localhost and 
+            errors and 
+            ("Connection refused" in errors or "LOCALHOST SERVER CONNECTION FAILED" in errors)
+        )
+        
+        if is_localhost_connection_error:
+            print(
+                "\nℹ️  Localhost connection error detected. Skipping GitHub issue creation."
+            )
+            print(
+                "This is expected when your local EvalAI server isn't running."
+            )
+        elif VALIDATION_STEP == "True" and check_if_pull_request():
             pr_number = GITHUB_CONTEXT["event"]["number"]
             add_pull_request_comment(
                 GITHUB_AUTH_TOKEN,
@@ -173,12 +190,6 @@ if __name__ == "__main__":
                 pr_number,
                 errors,
             )
-            print(
-                "\nExiting the {} script after failure\n".format(
-                    os.path.basename(__file__)
-                )
-            )
-            sys.exit(1)
         else:
             issue_title = (
                 "Following errors occurred while validating the challenge config:"
@@ -189,11 +200,12 @@ if __name__ == "__main__":
                 issue_title,
                 errors,
             )
-            print(
-                "\nExiting the {} script after failure\n".format(
-                    os.path.basename(__file__)
-                )
+        
+        print(
+            "\nExiting the {} script after failure\n".format(
+                os.path.basename(__file__)
             )
-            sys.exit(1)
+        )
+        sys.exit(1)
 
     print("\nExiting the {} script after success\n".format(os.path.basename(__file__)))

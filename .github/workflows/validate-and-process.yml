@@ -116,12 +116,25 @@ jobs:
           IS_VALIDATION: 'True'
           GITHUB_CONTEXT: ${{ toJson(github) }}
           GITHUB_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+        continue-on-error: ${{ needs.validate-host-config.outputs.is_localhost == 'true' }}
 
       - name: Create or update challenge
         run: |
           python3 github/challenge_processing_script.py
-        if: ${{ success() }}
+        if: ${{ success() && needs.validate-host-config.outputs.is_localhost != 'true' }}
         env:
           IS_VALIDATION: 'False'
           GITHUB_CONTEXT: ${{ toJson(github) }}
           GITHUB_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+
+      - name: Localhost Success Message
+        if: needs.validate-host-config.outputs.is_localhost == 'true'
+        run: |
+          echo "✅ LOCALHOST CONFIGURATION VALIDATED"
+          echo ""
+          echo "🏠 Your challenge configuration has been validated for localhost usage."
+          echo "🚀 To test your challenge, make sure your EvalAI server is running locally and execute:"
+          echo "   python3 github/challenge_processing_script.py"
+          echo ""
+          echo "📋 Server startup command (typical):"
+          echo "   python manage.py runserver 0.0.0.0:8888"

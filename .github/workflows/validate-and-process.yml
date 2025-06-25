@@ -80,7 +80,7 @@ jobs:
   process-evalai-challenge:
     needs: validate-host-config
     if: needs.validate-host-config.outputs.is_valid == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ${{ needs.validate-host-config.outputs.is_localhost == 'true' && 'self-hosted' || 'ubuntu-latest' }}
     steps:
       - name: Checkout challenge branch
         uses: actions/checkout@v3
@@ -97,17 +97,26 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f github/requirements.txt ]; then pip install -r github/requirements.txt; fi
 
-      - name: Localhost Warning
+      - name: Check Docker Compose Services
         if: needs.validate-host-config.outputs.is_localhost == 'true'
         run: |
-          echo "🏠 LOCALHOST DETECTED"
-          echo "⚠️  You are using a localhost server configuration."
-          echo "⚠️  GitHub Actions cannot connect to your local machine."
-          echo "⚠️  The following steps may fail due to connection issues."
-          echo "⚠️  This is expected behavior for localhost configurations."
-          echo ""
-          echo "📝 To test locally, make sure your EvalAI server is running and use:"
-          echo "   python3 github/challenge_processing_script.py"
+          echo "🏠 LOCALHOST DETECTED - Checking Docker Compose Services"
+          echo "📋 Checking if EvalAI server is running on localhost:8888..."
+          
+          # Check if the server is accessible
+          if curl -s --connect-timeout 5 http://localhost:8888/ > /dev/null 2>&1; then
+            echo "✅ EvalAI server is accessible at localhost:8888"
+          else
+            echo "❌ EvalAI server is not accessible at localhost:8888"
+            echo ""
+            echo "📝 Make sure your EvalAI server is running with docker-compose:"
+            echo "   docker-compose up -d"
+            echo ""
+            echo "🔍 Check running containers:"
+            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "(evalai|8888)" || echo "No EvalAI containers found"
+            echo ""
+            echo "🚨 This workflow will fail if the server is not running"
+          fi
 
       - name: Validate challenge
         run: |
@@ -116,25 +125,12 @@ jobs:
           IS_VALIDATION: 'True'
           GITHUB_CONTEXT: ${{ toJson(github) }}
           GITHUB_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
-        continue-on-error: ${{ needs.validate-host-config.outputs.is_localhost == 'true' }}
 
       - name: Create or update challenge
         run: |
           python3 github/challenge_processing_script.py
-        if: ${{ success() && needs.validate-host-config.outputs.is_localhost != 'true' }}
+        if: ${{ success() }}
         env:
           IS_VALIDATION: 'False'
           GITHUB_CONTEXT: ${{ toJson(github) }}
           GITHUB_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
-
-      - name: Localhost Success Message
-        if: needs.validate-host-config.outputs.is_localhost == 'true'
-        run: |
-          echo "✅ LOCALHOST CONFIGURATION VALIDATED"
-          echo ""
-          echo "🏠 Your challenge configuration has been validated for localhost usage."
-          echo "🚀 To test your challenge, make sure your EvalAI server is running locally and execute:"
-          echo "   python3 github/challenge_processing_script.py"
-          echo ""
-          echo "📋 Server startup command (typical):"
-          echo "   python manage.py runserver 0.0.0.0:8888"

@@ -148,22 +148,9 @@ def load_host_configs(config_path):
         host_auth_token = data["token"]
         challenge_host_team_pk = data["team_pk"]
         evalai_host_url = data["evalai_host_url"]
-        
-        # Validate and provide helpful information about URL format
-        if not evalai_host_url or evalai_host_url == "<evalai_host_url>":
-            error_message = "\nPlease set a valid evalai_host_url in {}. Examples:\n- Production: https://eval.ai\n- Localhost: http://127.0.0.1:8888".format(config_path)
-            print(error_message)
-            os.environ["CHALLENGE_ERRORS"] = error_message
-            return False
-            
-        # Ensure URL doesn't end with trailing slash
-        if evalai_host_url.endswith('/'):
-            evalai_host_url = evalai_host_url.rstrip('/')
-            print("INFO: Removed trailing slash from evalai_host_url")
-            
         return [host_auth_token, challenge_host_team_pk, evalai_host_url]
     else:
-        error_message = "\nThe host config json file is not present. Please include an auth token, team_pk & evalai_host_url in it: {}\nFor localhost development, use: http://127.0.0.1:8888".format(
+        error_message = "\nThe host config json file is not present. Please include an auth token, team_pk & evalai_host_url in it: {}".format(
             config_path
         )
         print(error_message)

@@ -112,6 +112,23 @@ if __name__ == "__main__":
             response.raise_for_status()
         else:
             print("\n" + response.json()["Success"])
+    except requests.exceptions.ConnectionError as conn_err:
+        # Handle connection errors specifically for localhost
+        if is_localhost:
+            error_message = "\n🚨 LOCALHOST SERVER CONNECTION FAILED\n"
+            error_message += "❌ Could not connect to your localhost EvalAI server at: {}\n".format(EVALAI_HOST_URL)
+            error_message += "\n📋 Please check the following:\n"
+            error_message += "   1. Is your EvalAI server running?\n"
+            error_message += "   2. Is it accessible at {}?\n".format(EVALAI_HOST_URL)
+            error_message += "   3. Check server logs for any startup errors\n"
+            error_message += "\n💡 To start your local server, typically run:\n"
+            error_message += "   python manage.py runserver 0.0.0.0:8888\n"
+            error_message += "\nOriginal error: {}".format(conn_err)
+        else:
+            error_message = "\nConnection failed to EvalAI server: {}".format(conn_err)
+        
+        print(error_message)
+        os.environ["CHALLENGE_ERRORS"] = error_message
     except requests.exceptions.HTTPError as err:
         if response.status_code in EVALAI_ERROR_CODES:
             is_token_valid = validate_token(response.json())

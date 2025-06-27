@@ -15,6 +15,8 @@ jobs:
     outputs:
       is_valid: ${{ steps.validate.outputs.is_valid }}
       is_localhost: ${{ steps.validate.outputs.is_localhost }}
+      host_url: ${{ steps.validate.outputs.host_url }}
+      requires_self_hosted: ${{ steps.validate.outputs.requires_self_hosted }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -24,6 +26,7 @@ jobs:
         run: |
           echo "is_valid=true" >> $GITHUB_OUTPUT
           echo "is_localhost=false" >> $GITHUB_OUTPUT
+          echo "requires_self_hosted=false" >> $GITHUB_OUTPUT
           echo "" > validation_error.log
 
           if ! [ -f "github/host_config.json" ]; then
@@ -36,27 +39,40 @@ jobs:
           TEAM_PK=$(jq -r '.team_pk' github/host_config.json)
           HOST_URL=$(jq -r '.evalai_host_url' github/host_config.json)
 
-          # Check if localhost is being used
+          echo "host_url=$HOST_URL" >> $GITHUB_OUTPUT
+
+          # Enhanced localhost detection
           if [[ "$HOST_URL" == *"127.0.0.1"* ]] || [[ "$HOST_URL" == *"localhost"* ]] || [[ "$HOST_URL" == *"0.0.0.0"* ]]; then
             echo "is_localhost=true" >> $GITHUB_OUTPUT
+            echo "requires_self_hosted=true" >> $GITHUB_OUTPUT
             echo "🏠 Localhost server detected: $HOST_URL"
-            echo "⚠️  Note: GitHub Actions cannot connect to your local machine."
-            echo "⚠️  This workflow will validate the configuration but cannot test server connectivity."
-            echo "⚠️  Make sure your localhost server is running when testing locally."
+            echo "🤖 Self-hosted runner required for local development"
+            echo ""
+            echo "📋 Requirements for local challenge creation:"
+            echo "   ✅ Self-hosted GitHub Actions runner must be configured"
+            echo "   ✅ EvalAI server must be running at: $HOST_URL"
+            echo "   ✅ Network connectivity between runner and server"
+            echo ""
+            echo "⚠️  Note: GitHub hosted runners cannot connect to localhost"
+            echo "⚠️  This workflow will use your self-hosted runner instead"
           fi
 
+          # Validate required fields
           if [[ -z "$TOKEN" || "$TOKEN" == "<evalai_user_auth_token>" ]]; then
-            echo "❌ Invalid or missing token" | tee -a validation_error.log
+            echo "❌ Invalid or missing token in host_config.json" | tee -a validation_error.log
+            echo "💡 Please replace <evalai_user_auth_token> with your actual EvalAI token" | tee -a validation_error.log
             echo "is_valid=false" >> $GITHUB_OUTPUT
           fi
 
           if [[ -z "$TEAM_PK" || "$TEAM_PK" == "<host_team_pk>" ]]; then
-            echo "❌ Invalid or missing team_pk" | tee -a validation_error.log
+            echo "❌ Invalid or missing team_pk in host_config.json" | tee -a validation_error.log
+            echo "💡 Please replace <host_team_pk> with your actual team primary key" | tee -a validation_error.log
             echo "is_valid=false" >> $GITHUB_OUTPUT
           fi
 
           if [[ -z "$HOST_URL" || "$HOST_URL" == "<evalai_host_url>" ]]; then
-            echo "❌ Invalid or missing evalai_host_url" | tee -a validation_error.log
+            echo "❌ Invalid or missing evalai_host_url in host_config.json" | tee -a validation_error.log
+            echo "💡 Please replace <evalai_host_url> with your EvalAI server URL" | tee -a validation_error.log
             echo "is_valid=false" >> $GITHUB_OUTPUT
           fi
 
@@ -64,11 +80,12 @@ jobs:
         if: steps.validate.outputs.is_valid == 'false'
         uses: peter-evans/create-issue-from-file@v4
         with:
-          title: "host_config.json validation failed"
+          title: "❌ host_config.json validation failed"
           content-filepath: validation_error.log
           labels: |
             bug
             config
+            self-hosted
 
       - name: Fail job if invalid
         if: steps.validate.outputs.is_valid == 'false'
@@ -76,16 +93,60 @@ jobs:
           echo "❌ host_config.json validation failed. See issue for details."
           exit 1
 
+  check-self-hosted-requirements:
+    needs: validate-host-config
+    if: needs.validate-host-config.outputs.requires_self_hosted == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Self-hosted runner requirements check
+        run: |
+          echo "🏠 LOCAL DEVELOPMENT MODE DETECTED"
+          echo "=================================="
+          echo ""
+          echo "📋 To proceed with local challenge creation, ensure you have:"
+          echo ""
+          echo "1️⃣  Self-hosted GitHub Actions runner configured:"
+          echo "   • Download runner from: https://github.com/${{ github.repository }}/settings/actions/runners"
+          echo "   • Install and configure on your local machine"
+          echo "   • Start the runner service"
+          echo ""
+          echo "2️⃣  EvalAI server running locally:"
+          echo "   • Server URL: ${{ needs.validate-host-config.outputs.host_url }}"
+          echo "   • Ensure it's accessible from your machine"
+          echo "   • Verify API endpoints are responding"
+          echo ""
+          echo "3️⃣  Network connectivity:"
+          echo "   • Runner can reach your EvalAI server"
+          echo "   • No firewall blocking connections"
+          echo ""
+          echo "⚠️  This job will continue on your self-hosted runner..."
+          echo "⚠️  If you don't have a self-hosted runner, the next job will fail"
 
   process-evalai-challenge:
-    needs: validate-host-config
-    if: needs.validate-host-config.outputs.is_valid == 'true'
-    runs-on: ${{ needs.validate-host-config.outputs.is_localhost == 'true' && 'self-hosted' || 'ubuntu-latest' }}
+    needs: [validate-host-config, check-self-hosted-requirements]
+    if: |
+      always() && 
+      needs.validate-host-config.outputs.is_valid == 'true' &&
+      (needs.check-self-hosted-requirements.result == 'success' || needs.check-self-hosted-requirements.result == 'skipped')
+    runs-on: ${{ needs.validate-host-config.outputs.requires_self_hosted == 'true' && 'self-hosted' || 'ubuntu-latest' }}
+    
     steps:
       - name: Checkout challenge branch
         uses: actions/checkout@v3
         with:
           ref: challenge
+
+      - name: Environment Information
+        run: |
+          echo "🔍 ENVIRONMENT INFORMATION"
+          echo "========================="
+          echo "Runner Type: ${{ needs.validate-host-config.outputs.requires_self_hosted == 'true' && 'Self-hosted' || 'GitHub-hosted' }}"
+          echo "EvalAI URL: ${{ needs.validate-host-config.outputs.host_url }}"
+          echo "Is Localhost: ${{ needs.validate-host-config.outputs.is_localhost }}"
+          echo "OS: $(uname -s)"
+          echo "Architecture: $(uname -m)"
+          echo "Working Directory: $(pwd)"
+          echo ""
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -95,31 +156,87 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          if [ -f github/requirements.txt ]; then pip install -r github/requirements.txt; fi
-
-      - name: Check Docker Compose Services
-        if: needs.validate-host-config.outputs.is_localhost == 'true'
-        run: |
-          echo "🏠 LOCALHOST DETECTED - Checking Docker Compose Services"
-          echo "📋 Checking if EvalAI server is running on localhost:8888..."
-          
-          # Check if the server is accessible
-          if curl -s --connect-timeout 5 http://localhost:8888/ > /dev/null 2>&1; then
-            echo "✅ EvalAI server is accessible at localhost:8888"
+          if [ -f github/requirements.txt ]; then 
+            echo "📦 Installing dependencies from github/requirements.txt"
+            pip install -r github/requirements.txt
           else
-            echo "❌ EvalAI server is not accessible at localhost:8888"
-            echo ""
-            echo "📝 Make sure your EvalAI server is running with docker-compose:"
-            echo "   docker-compose up -d"
-            echo ""
-            echo "🔍 Check running containers:"
-            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "(evalai|8888)" || echo "No EvalAI containers found"
-            echo ""
-            echo "🚨 This workflow will fail if the server is not running"
+            echo "⚠️  No requirements.txt found in github/ directory"
           fi
 
-      - name: Validate challenge
+      - name: Pre-flight Local Server Health Check
+        if: needs.validate-host-config.outputs.is_localhost == 'true'
         run: |
+          echo "🏥 LOCAL SERVER HEALTH CHECK"
+          echo "============================"
+          
+          SERVER_URL="${{ needs.validate-host-config.outputs.host_url }}"
+          echo "🔍 Checking EvalAI server at: $SERVER_URL"
+          echo ""
+          
+          # Extract host and port from URL
+          if [[ "$SERVER_URL" =~ http://([^:/]+):([0-9]+) ]]; then
+            HOST="${BASH_REMATCH[1]}"
+            PORT="${BASH_REMATCH[2]}"
+          elif [[ "$SERVER_URL" =~ http://([^:/]+) ]]; then
+            HOST="${BASH_REMATCH[1]}"
+            PORT="80"
+          else
+            echo "❌ Unable to parse server URL: $SERVER_URL"
+            exit 1
+          fi
+          
+          echo "🌐 Resolved to Host: $HOST, Port: $PORT"
+          echo ""
+          
+          # Test basic connectivity
+          echo "1️⃣  Testing basic connectivity..."
+          if timeout 10 nc -z "$HOST" "$PORT" 2>/dev/null; then
+            echo "   ✅ Port $PORT is reachable on $HOST"
+          else
+            echo "   ❌ Port $PORT is NOT reachable on $HOST"
+            echo "   💡 Make sure your EvalAI server is running and listening on $HOST:$PORT"
+          fi
+          
+          # Test HTTP endpoint
+          echo ""
+          echo "2️⃣  Testing HTTP endpoint..."
+          if curl -s --connect-timeout 10 --max-time 10 "$SERVER_URL/" > /dev/null 2>&1; then
+            echo "   ✅ HTTP endpoint is responding at $SERVER_URL"
+            
+            # Test API endpoint
+            echo ""
+            echo "3️⃣  Testing API endpoint..."
+            API_URL="$SERVER_URL/api/"
+            if curl -s --connect-timeout 10 --max-time 10 "$API_URL" > /dev/null 2>&1; then
+              echo "   ✅ API endpoint is accessible at $API_URL"
+            else
+              echo "   ⚠️  API endpoint test failed, but server is responding"
+              echo "   💡 This might be normal if API requires authentication"
+            fi
+          else
+            echo "   ❌ HTTP endpoint is not responding at $SERVER_URL"
+            echo ""
+            echo "🚨 TROUBLESHOOTING STEPS:"
+            echo "   1. Verify your EvalAI server is running:"
+            echo "      python manage.py runserver 0.0.0.0:8888"
+            echo "   2. Check if the server is binding to the correct interface"
+            echo "   3. Verify no firewall is blocking the connection"
+            echo "   4. Check server logs for errors"
+            echo ""
+            echo "   If using Docker:"
+            echo "      docker-compose up -d"
+            echo "      docker-compose ps"
+            echo ""
+            exit 1
+          fi
+          
+          echo ""
+          echo "✅ Pre-flight health check completed successfully!"
+
+      - name: Validate challenge configuration
+        run: |
+          echo "🔍 VALIDATING CHALLENGE CONFIGURATION"
+          echo "====================================="
           python3 github/challenge_processing_script.py
         env:
           IS_VALIDATION: 'True'
@@ -127,10 +244,51 @@ jobs:
           GITHUB_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
 
       - name: Create or update challenge
+        if: success()
         run: |
+          echo "🚀 CREATING/UPDATING CHALLENGE"
+          echo "=============================="
           python3 github/challenge_processing_script.py
-        if: ${{ success() }}
         env:
           IS_VALIDATION: 'False'
           GITHUB_CONTEXT: ${{ toJson(github) }}
           GITHUB_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+
+      - name: Success Summary
+        if: success()
+        run: |
+          echo ""
+          echo "🎉 CHALLENGE PROCESSING COMPLETED SUCCESSFULLY!"
+          echo "=============================================="
+          echo ""
+          if [[ "${{ needs.validate-host-config.outputs.is_localhost }}" == "true" ]]; then
+            echo "✅ Local development mode: Challenge processed on self-hosted runner"
+            echo "✅ EvalAI server: ${{ needs.validate-host-config.outputs.host_url }}"
+            echo "✅ Self-hosted runner successfully connected to local server"
+          else
+            echo "✅ Production mode: Challenge processed on GitHub-hosted runner"
+            echo "✅ EvalAI server: ${{ needs.validate-host-config.outputs.host_url }}"
+          fi
+          echo ""
+          echo "🔍 Check your EvalAI instance for the updated challenge configuration"
+
+      - name: Failure Summary
+        if: failure()
+        run: |
+          echo ""
+          echo "❌ CHALLENGE PROCESSING FAILED"
+          echo "=============================="
+          echo ""
+          if [[ "${{ needs.validate-host-config.outputs.is_localhost }}" == "true" ]]; then
+            echo "🏠 Local development mode detected"
+            echo "💡 Common issues for self-hosted runners:"
+            echo "   • EvalAI server not running or not accessible"
+            echo "   • Self-hosted runner not properly configured"
+            echo "   • Network connectivity issues between runner and server"
+            echo "   • Invalid authentication credentials"
+            echo ""
+            echo "🔍 Check the logs above for specific error details"
+          else
+            echo "☁️  GitHub-hosted runner mode"
+            echo "🔍 Check the logs above for specific error details"
+          fi

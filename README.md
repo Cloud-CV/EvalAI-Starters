@@ -74,6 +74,49 @@ In order to test the evaluation script locally before uploading it to [EvalAI](h
 
 3. Run the command `python -m worker.run` from the directory where `annotations/` `challenge_data/` and `worker/` directories are present. If the command runs successfully, then the evaluation script works locally and will work on the server as well.
 
+## Local Development with Self-Hosted Runners
+
+For local EvalAI challenge development, this repository supports **self-hosted GitHub Actions runners** that can connect to your localhost EvalAI server.
+
+### When to use self-hosted runners:
+- ✅ Developing with a local EvalAI server (`http://localhost:8888`)
+- ✅ Testing challenges before deploying to production
+- ✅ Rapid iteration during development
+- ✅ Working with custom EvalAI configurations
+
+### Quick Setup:
+
+1. **Configure localhost in host_config.json:**
+   ```json
+   {
+       "token": "your_evalai_auth_token",
+       "team_pk": "your_team_primary_key",
+       "evalai_host_url": "http://localhost:8888"
+   }
+   ```
+
+2. **Set up self-hosted runner:**
+   - Go to your repository → Settings → Actions → Runners
+   - Click "New self-hosted runner"
+   - Follow the setup instructions for your OS
+   - Start your EvalAI server: `python manage.py runserver 0.0.0.0:8888`
+
+3. **Test your setup:**
+   ```bash
+   python3 github/test_local_setup.py
+   ```
+
+4. **Push to challenge branch:**
+   The workflow will automatically detect localhost and use your self-hosted runner!
+
+### For detailed setup instructions:
+📚 See [Self-Hosted Runner Setup Guide](./github/self_hosted_runner_setup.md)
+
+### Troubleshooting:
+- **Connection refused**: Make sure your EvalAI server is running and accessible
+- **Wrong runner used**: Verify `host_config.json` contains localhost URL
+- **Permission errors**: Check runner has appropriate file system access
+
 ## Important Note
 `host_config.json` file includes default placeholders like:
 
@@ -83,6 +126,13 @@ In order to test the evaluation script locally before uploading it to [EvalAI](h
 
 Please replace them with real values before pushing changes to avoid build errors.
 
+**For localhost development**: Use `http://localhost:8888` or `http://127.0.0.1:8888` as the `evalai_host_url` and ensure you have a self-hosted runner configured.
+
 ## Facing problems in creating a challenge?
 
 Please feel free to open issues on our [GitHub Repository](https://github.com/Cloud-CV/EvalAI-Starter/issues) or contact us at team@cloudcv.org if you have issues.
+
+For **self-hosted runner issues**, include:
+- Runner logs from `_diag` folder
+- Output from `python3 github/test_local_setup.py`
+- Your `host_config.json` configuration (without sensitive tokens)

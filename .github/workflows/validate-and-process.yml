@@ -194,7 +194,11 @@ jobs:
         if: needs.validate-host-config.outputs.requires_self_hosted == 'true'
         run: |
           echo "📦 Installing dependencies in Docker container"
-          docker run --rm -v "$(pwd):/workspace" -w /workspace python:3.9-slim bash -c "
+          docker run --rm \
+            --add-host host.docker.internal:host-gateway \
+            -v "$(pwd):/workspace" \
+            -w /workspace \
+            python:3.9-slim bash -c "
             pip install --upgrade pip
             if [ -f github/requirements.txt ]; then 
               echo '📦 Installing dependencies from github/requirements.txt'
@@ -263,7 +267,7 @@ jobs:
           
           for TEST_HOST in "${HOSTS_TO_TRY[@]}"; do
             echo "   🔍 Testing connection to $TEST_HOST:$PORT..."
-            if docker run --rm alpine/curl:latest sh -c "nc -z $TEST_HOST $PORT" 2>/dev/null; then
+            if docker run --rm --add-host host.docker.internal:host-gateway alpine/curl:latest sh -c "nc -z $TEST_HOST $PORT" 2>/dev/null; then
               echo "   ✅ Port $PORT is reachable on $TEST_HOST"
               CONNECTIVITY_SUCCESS=true
               WORKING_HOST="$TEST_HOST"
@@ -297,14 +301,14 @@ jobs:
           # Test HTTP endpoint using Docker
           echo ""
           echo "2️⃣  Testing HTTP endpoint from Docker container..."
-          if docker run --rm alpine/curl:latest curl -s --connect-timeout 10 --max-time 10 "$SERVER_URL/" > /dev/null 2>&1; then
+          if docker run --rm --add-host host.docker.internal:host-gateway alpine/curl:latest curl -s --connect-timeout 10 --max-time 10 "$SERVER_URL/" > /dev/null 2>&1; then
             echo "   ✅ HTTP endpoint is responding at $SERVER_URL"
             
             # Test API endpoint
             echo ""
             echo "3️⃣  Testing API endpoint from Docker container..."
             API_URL="$SERVER_URL/api/"
-            if docker run --rm alpine/curl:latest curl -s --connect-timeout 10 --max-time 10 "$API_URL" > /dev/null 2>&1; then
+            if docker run --rm --add-host host.docker.internal:host-gateway alpine/curl:latest curl -s --connect-timeout 10 --max-time 10 "$API_URL" > /dev/null 2>&1; then
               echo "   ✅ API endpoint is accessible at $API_URL"
             else
               echo "   ⚠️  API endpoint test failed, but server is responding"
@@ -348,6 +352,7 @@ jobs:
           echo "🔍 VALIDATING CHALLENGE CONFIGURATION (Docker)"
           echo "==============================================="
           docker run --rm \
+            --add-host host.docker.internal:host-gateway \
             -v "$(pwd):/workspace" \
             -w /workspace \
             -e IS_VALIDATION='True' \
@@ -376,6 +381,7 @@ jobs:
           echo "🚀 CREATING/UPDATING CHALLENGE (Docker)"
           echo "========================================"
           docker run --rm \
+            --add-host host.docker.internal:host-gateway \
             -v "$(pwd):/workspace" \
             -w /workspace \
             -e IS_VALIDATION='False' \
@@ -428,6 +434,7 @@ jobs:
             echo "   • Update host_config.json URL to: http://host.docker.internal:8888"
             echo "   • Ensure EvalAI server runs with: python manage.py runserver 0.0.0.0:8888"
             echo "   • Check Docker is running: docker --version"
+            echo "   • Note: Workflow automatically adds --add-host host.docker.internal:host-gateway"
             echo ""
             echo "🔍 Check the logs above for specific error details"
           else

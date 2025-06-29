@@ -41,12 +41,13 @@ jobs:
 
           echo "host_url=$HOST_URL" >> $GITHUB_OUTPUT
 
-          # Enhanced localhost detection
-          if [[ "$HOST_URL" == *"127.0.0.1"* ]] || [[ "$HOST_URL" == *"localhost"* ]] || [[ "$HOST_URL" == *"0.0.0.0"* ]]; then
+          # Enhanced localhost detection (includes Docker networking hosts)
+          if [[ "$HOST_URL" == *"127.0.0.1"* ]] || [[ "$HOST_URL" == *"localhost"* ]] || [[ "$HOST_URL" == *"0.0.0.0"* ]] || [[ "$HOST_URL" == *"host.docker.internal"* ]] || [[ "$HOST_URL" == *"172.17.0.1"* ]] || [[ "$HOST_URL" == *"192.168."* ]]; then
             echo "is_localhost=true" >> $GITHUB_OUTPUT
             echo "requires_self_hosted=true" >> $GITHUB_OUTPUT
-            echo "🏠 Localhost server detected: $HOST_URL"
+            echo "🏠 Localhost/Docker networking server detected: $HOST_URL"
             echo "🤖 Self-hosted runner required for local development"
+            echo "🐳 Docker networking will be used for container-to-host communication"
             echo ""
             echo "📋 Requirements for local challenge creation:"
             echo "   ✅ Self-hosted GitHub Actions runner must be configured"
@@ -116,10 +117,11 @@ jobs:
           echo "   • This solves compatibility issues with ARM64/macOS architectures"
           echo "   • Note: GitHub Actions containers only work on Linux, so we use docker run instead"
           echo ""
-          echo "3️⃣  EvalAI server running locally:"
+          echo "3️⃣  EvalAI server running via Docker Compose:"
+          echo "   • Run: cd /path/to/evalai && docker-compose up --build"
           echo "   • Server URL: ${{ needs.validate-host-config.outputs.host_url }}"
-          echo "   • Ensure it's accessible from Docker containers (use host networking)"
-          echo "   • Verify API endpoints are responding"
+          echo "   • Django API: localhost:8000, Node.js frontend: localhost:8888"
+          echo "   • Ensure it's accessible from Docker containers"
           echo ""
           echo "4️⃣  Network connectivity:"
           echo "   • Docker container can reach your EvalAI server"
@@ -259,6 +261,12 @@ jobs:
             printf '   • %s\n' "${HOSTS_TO_TRY[@]}"
           fi
           echo ""
+          echo "💡 Expected EvalAI Docker Compose setup:"
+          echo "   • Django service: Port 8000 (backend API)"
+          echo "   • Node.js service: Port 8888 (frontend, proxies to Django)"
+          echo "   • Command: docker-compose up --build"
+          echo "   • Workflow connects to: Node.js service at port 8888"
+          echo ""
           
           # Test basic connectivity with multiple host variants using Docker
           echo "1️⃣  Testing basic connectivity from Docker container..."
@@ -282,8 +290,13 @@ jobs:
             echo "   💡 Make sure your EvalAI server is running and accessible from Docker"
             echo ""
             echo "🚨 DOCKER NETWORKING TROUBLESHOOTING:"
-            echo "   1. If running EvalAI locally, use: python manage.py runserver 0.0.0.0:8888"
-            echo "   2. Update host_config.json to use one of these URLs:"
+            echo "   1. Start EvalAI using Docker Compose:"
+            echo "      cd /path/to/your/evalai"
+            echo "      docker-compose up --build"
+            echo "   2. This starts both services:"
+            echo "      • Django API at localhost:8000"
+            echo "      • Node.js frontend at localhost:8888 (proxies to Django)"
+            echo "   3. Update host_config.json to use one of these URLs:"
             printf "      • http://host.docker.internal:%s (macOS/Windows)\n" "$PORT"
             printf "      • http://172.17.0.1:%s (Linux Docker bridge)\n" "$PORT"
             printf "      • http://0.0.0.0:%s (if server binds to all interfaces)\n" "$PORT"
@@ -318,22 +331,27 @@ jobs:
             echo "   ❌ HTTP endpoint is not responding at $SERVER_URL"
             echo ""
             echo "🚨 TROUBLESHOOTING STEPS:"
-            echo "   1. Verify your EvalAI server is running:"
-            echo "      python manage.py runserver 0.0.0.0:8888"
-            echo "   2. Check if the server is binding to the correct interface (0.0.0.0)"
+            echo "   1. Start EvalAI using Docker Compose:"
+            echo "      cd /path/to/your/evalai"
+            echo "      docker-compose up --build"
+            echo "   2. Verify both services are running:"
+            echo "      • Django API: http://localhost:8000"
+            echo "      • Node.js frontend: http://localhost:8888"
             echo "   3. Update host_config.json with Docker-compatible URL"
-            echo "   4. Check server logs for errors"
+            echo "   4. Check docker-compose logs for errors"
             echo ""
             echo "   Docker networking tips:"
             echo "   • Use host.docker.internal instead of localhost on macOS/Windows"
             echo "   • Use 172.17.0.1 (Docker bridge IP) on Linux"
-            echo "   • Ensure server binds to 0.0.0.0, not just 127.0.0.1"
+            echo "   • Node.js service at :8888 proxies API calls to Django at :8000"
             echo ""
             exit 1
           fi
           
           echo ""
           echo "✅ Pre-flight health check completed successfully!"
+          echo "✅ Node.js frontend service at :8888 is accessible from Docker containers"
+          echo "💡 Node.js service will proxy API calls to Django service at :8000"
 
       - name: Validate challenge configuration (GitHub-hosted)
         if: needs.validate-host-config.outputs.requires_self_hosted != 'true'
@@ -404,8 +422,9 @@ jobs:
             echo "✅ Local development mode: Challenge processed on self-hosted runner"
             echo "✅ Docker containers: python:3.9-slim (architecture independent)"
             echo "✅ macOS + Docker approach: Works on ARM64 and AMD64 architectures"
-            echo "✅ EvalAI server: ${{ needs.validate-host-config.outputs.host_url }}"
-            echo "✅ Self-hosted runner successfully connected to local server via Docker"
+            echo "✅ EvalAI Node.js service: ${{ needs.validate-host-config.outputs.host_url }}"
+            echo "✅ Node.js service proxying API calls to Django service"
+            echo "✅ Self-hosted runner successfully connected to Node.js service via Docker"
           else
             echo "✅ Production mode: Challenge processed on GitHub-hosted runner"
             echo "✅ EvalAI server: ${{ needs.validate-host-config.outputs.host_url }}"
@@ -423,7 +442,7 @@ jobs:
           if [[ "${{ needs.validate-host-config.outputs.is_localhost }}" == "true" ]]; then
             echo "🏠 Local development mode detected (macOS + Docker)"
             echo "💡 Common issues for self-hosted runners with Docker:"
-            echo "   • EvalAI server not running or not accessible from Docker containers"
+            echo "   • EvalAI Docker Compose services not running or not accessible from Docker containers"
             echo "   • Self-hosted runner not properly configured"
             echo "   • Docker not installed or not running on the runner machine"
             echo "   • Docker networking issues between container and host"
@@ -432,9 +451,10 @@ jobs:
             echo ""
             echo "🔧 Quick fixes to try:"
             echo "   • Update host_config.json URL to: http://host.docker.internal:8888"
-            echo "   • Ensure EvalAI server runs with: python manage.py runserver 0.0.0.0:8888"
+            echo "   • Start EvalAI using Docker Compose:"
+            echo "     cd /path/to/your/evalai && docker-compose up --build"
             echo "   • Check Docker is running: docker --version"
-            echo "   • Note: Workflow automatically adds --add-host host.docker.internal:host-gateway"
+            echo "   • Note: Workflow connects to Node.js service at :8888, which proxies to Django at :8000"
             echo ""
             echo "🔍 Check the logs above for specific error details"
           else

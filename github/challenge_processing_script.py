@@ -52,8 +52,11 @@ def is_localhost_url(url):
     """
     localhost_indicators = [
         "127.0.0.1",
-        "localhost",
-        "0.0.0.0"
+        "localhost", 
+        "0.0.0.0",
+        "host.docker.internal",
+        "172.17.0.1",
+        "192.168."
     ]
     return any(indicator in url.lower() for indicator in localhost_indicators)
 

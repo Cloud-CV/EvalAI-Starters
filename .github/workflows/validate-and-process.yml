@@ -112,8 +112,9 @@ jobs:
           echo ""
           echo "2️⃣  Docker installed and running:"
           echo "   • Docker Engine must be available on the runner machine"
-          echo "   • Runner will use python:3.9-slim container (architecture independent)"
+          echo "   • Will use 'docker run' commands with python:3.9-slim (architecture independent)"
           echo "   • This solves compatibility issues with ARM64/macOS architectures"
+          echo "   • Note: GitHub Actions containers only work on Linux, so we use docker run instead"
           echo ""
           echo "3️⃣  EvalAI server running locally:"
           echo "   • Server URL: ${{ needs.validate-host-config.outputs.host_url }}"
@@ -136,8 +137,8 @@ jobs:
       (needs.check-self-hosted-requirements.result == 'success' || needs.check-self-hosted-requirements.result == 'skipped')
     runs-on: ${{ needs.validate-host-config.outputs.requires_self_hosted == 'true' && 'self-hosted' || 'ubuntu-latest' }}
     
-    # Use Docker container for self-hosted runners to ensure architecture independence
-    container: ${{ needs.validate-host-config.outputs.requires_self_hosted == 'true' && 'python:3.9-slim' || null }}
+    # Note: GitHub Actions containers only work on Linux runners
+    # For macOS self-hosted runners, we'll use Docker run commands instead
     
     steps:
       - name: Checkout challenge branch
@@ -149,14 +150,18 @@ jobs:
         run: |
           echo "🔍 ENVIRONMENT INFORMATION"
           echo "========================="
-          echo "Runner Type: ${{ needs.validate-host-config.outputs.requires_self_hosted == 'true' && 'Self-hosted (Docker)' || 'GitHub-hosted' }}"
+          echo "Runner Type: ${{ needs.validate-host-config.outputs.requires_self_hosted == 'true' && 'Self-hosted (macOS + Docker)' || 'GitHub-hosted' }}"
           echo "EvalAI URL: ${{ needs.validate-host-config.outputs.host_url }}"
           echo "Is Localhost: ${{ needs.validate-host-config.outputs.is_localhost }}"
           echo "OS: $(uname -s)"
           echo "Architecture: $(uname -m)"
           echo "Working Directory: $(pwd)"
-          echo "Python Version: $(python3 --version)"
-          echo "Container: ${{ needs.validate-host-config.outputs.requires_self_hosted == 'true' && 'python:3.9-slim' || 'None' }}"
+          if [[ "${{ needs.validate-host-config.outputs.requires_self_hosted }}" == "true" ]]; then
+            echo "Docker Version: $(docker --version)"
+            echo "Will use Docker containers for Python execution"
+          else
+            echo "Python Version: $(python3 --version)"
+          fi
           echo ""
 
       - name: Set up Python (GitHub-hosted only)
@@ -165,15 +170,17 @@ jobs:
         with:
           python-version: 3.9.21
 
-      - name: Install system dependencies (Docker container only)
+      - name: Prepare Docker environment (Self-hosted only)
         if: needs.validate-host-config.outputs.requires_self_hosted == 'true'
         run: |
-          echo "📦 Installing system dependencies in Docker container"
-          apt-get update
-          apt-get install -y curl netcat-traditional jq git
-          echo "✅ System dependencies installed"
+          echo "🐳 PREPARING DOCKER ENVIRONMENT"
+          echo "==============================="
+          echo "Pulling Python 3.9 Docker image..."
+          docker pull python:3.9-slim
+          echo "✅ Docker image ready"
 
-      - name: Install dependencies
+      - name: Install dependencies (GitHub-hosted)
+        if: needs.validate-host-config.outputs.requires_self_hosted != 'true'
         run: |
           python -m pip install --upgrade pip
           if [ -f github/requirements.txt ]; then 
@@ -183,15 +190,47 @@ jobs:
             echo "⚠️  No requirements.txt found in github/ directory"
           fi
 
-      - name: Pre-flight Local Server Health Check
-        if: needs.validate-host-config.outputs.is_localhost == 'true'
+      - name: Install dependencies (Self-hosted with Docker)
+        if: needs.validate-host-config.outputs.requires_self_hosted == 'true'
+        run: |
+          echo "📦 Installing dependencies in Docker container"
+          docker run --rm -v "$(pwd):/workspace" -w /workspace python:3.9-slim bash -c "
+            pip install --upgrade pip
+            if [ -f github/requirements.txt ]; then 
+              echo '📦 Installing dependencies from github/requirements.txt'
+              pip install -r github/requirements.txt
+            else
+              echo '⚠️  No requirements.txt found in github/ directory'
+            fi
+          "
+          echo "✅ Dependencies installed in Docker"
+
+      - name: Pre-flight Local Server Health Check (GitHub-hosted)
+        if: needs.validate-host-config.outputs.is_localhost == 'true' && needs.validate-host-config.outputs.requires_self_hosted != 'true'
+        run: |
+          echo "🏥 LOCAL SERVER HEALTH CHECK"
+          echo "============================"
+          
+          SERVER_URL="${{ needs.validate-host-config.outputs.host_url }}"
+          echo "🔍 Checking EvalAI server at: $SERVER_URL"
+          
+          # Health check logic for GitHub-hosted runners
+          # (This would typically not be used since GitHub-hosted can't reach localhost)
+          curl -s --connect-timeout 10 --max-time 10 "$SERVER_URL/" > /dev/null 2>&1 || {
+            echo "❌ Cannot reach EvalAI server"
+            exit 1
+          }
+          echo "✅ Health check passed"
+
+      - name: Pre-flight Local Server Health Check (Self-hosted with Docker)
+        if: needs.validate-host-config.outputs.is_localhost == 'true' && needs.validate-host-config.outputs.requires_self_hosted == 'true'
         run: |
           echo "🏥 LOCAL SERVER HEALTH CHECK (Docker Container)"
           echo "==============================================="
           
           SERVER_URL="${{ needs.validate-host-config.outputs.host_url }}"
           echo "🔍 Checking EvalAI server at: $SERVER_URL"
-          echo "🐳 Running in Docker container - checking host networking"
+          echo "🐳 Running health check from Docker container"
           echo ""
           
           # Extract host and port from URL
@@ -217,14 +256,14 @@ jobs:
           fi
           echo ""
           
-          # Test basic connectivity with multiple host variants
-          echo "1️⃣  Testing basic connectivity..."
+          # Test basic connectivity with multiple host variants using Docker
+          echo "1️⃣  Testing basic connectivity from Docker container..."
           CONNECTIVITY_SUCCESS=false
           WORKING_HOST=""
           
           for TEST_HOST in "${HOSTS_TO_TRY[@]}"; do
             echo "   🔍 Testing connection to $TEST_HOST:$PORT..."
-            if timeout 10 nc -z "$TEST_HOST" "$PORT" 2>/dev/null; then
+            if docker run --rm alpine/curl:latest sh -c "nc -z $TEST_HOST $PORT" 2>/dev/null; then
               echo "   ✅ Port $PORT is reachable on $TEST_HOST"
               CONNECTIVITY_SUCCESS=true
               WORKING_HOST="$TEST_HOST"
@@ -255,17 +294,17 @@ jobs:
             echo "   🔄 Updated server URL to: $SERVER_URL"
           fi
           
-          # Test HTTP endpoint
+          # Test HTTP endpoint using Docker
           echo ""
-          echo "2️⃣  Testing HTTP endpoint..."
-          if curl -s --connect-timeout 10 --max-time 10 "$SERVER_URL/" > /dev/null 2>&1; then
+          echo "2️⃣  Testing HTTP endpoint from Docker container..."
+          if docker run --rm alpine/curl:latest curl -s --connect-timeout 10 --max-time 10 "$SERVER_URL/" > /dev/null 2>&1; then
             echo "   ✅ HTTP endpoint is responding at $SERVER_URL"
             
             # Test API endpoint
             echo ""
-            echo "3️⃣  Testing API endpoint..."
+            echo "3️⃣  Testing API endpoint from Docker container..."
             API_URL="$SERVER_URL/api/"
-            if curl -s --connect-timeout 10 --max-time 10 "$API_URL" > /dev/null 2>&1; then
+            if docker run --rm alpine/curl:latest curl -s --connect-timeout 10 --max-time 10 "$API_URL" > /dev/null 2>&1; then
               echo "   ✅ API endpoint is accessible at $API_URL"
             else
               echo "   ⚠️  API endpoint test failed, but server is responding"
@@ -292,7 +331,8 @@ jobs:
           echo ""
           echo "✅ Pre-flight health check completed successfully!"
 
-      - name: Validate challenge configuration
+      - name: Validate challenge configuration (GitHub-hosted)
+        if: needs.validate-host-config.outputs.requires_self_hosted != 'true'
         run: |
           echo "🔍 VALIDATING CHALLENGE CONFIGURATION"
           echo "====================================="
@@ -302,8 +342,25 @@ jobs:
           GITHUB_CONTEXT: ${{ toJson(github) }}
           GITHUB_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
 
-      - name: Create or update challenge
-        if: success()
+      - name: Validate challenge configuration (Self-hosted with Docker)
+        if: needs.validate-host-config.outputs.requires_self_hosted == 'true'
+        run: |
+          echo "🔍 VALIDATING CHALLENGE CONFIGURATION (Docker)"
+          echo "==============================================="
+          docker run --rm \
+            -v "$(pwd):/workspace" \
+            -w /workspace \
+            -e IS_VALIDATION='True' \
+            -e GITHUB_CONTEXT='${{ toJson(github) }}' \
+            -e GITHUB_AUTH_TOKEN='${{ secrets.AUTH_TOKEN }}' \
+            python:3.9-slim \
+            bash -c "
+              pip install -r github/requirements.txt && 
+              python3 github/challenge_processing_script.py
+            "
+
+      - name: Create or update challenge (GitHub-hosted)
+        if: success() && needs.validate-host-config.outputs.requires_self_hosted != 'true'
         run: |
           echo "🚀 CREATING/UPDATING CHALLENGE"
           echo "=============================="
@@ -312,6 +369,23 @@ jobs:
           IS_VALIDATION: 'False'
           GITHUB_CONTEXT: ${{ toJson(github) }}
           GITHUB_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+
+      - name: Create or update challenge (Self-hosted with Docker)
+        if: success() && needs.validate-host-config.outputs.requires_self_hosted == 'true'
+        run: |
+          echo "🚀 CREATING/UPDATING CHALLENGE (Docker)"
+          echo "========================================"
+          docker run --rm \
+            -v "$(pwd):/workspace" \
+            -w /workspace \
+            -e IS_VALIDATION='False' \
+            -e GITHUB_CONTEXT='${{ toJson(github) }}' \
+            -e GITHUB_AUTH_TOKEN='${{ secrets.AUTH_TOKEN }}' \
+            python:3.9-slim \
+            bash -c "
+              pip install -r github/requirements.txt && 
+              python3 github/challenge_processing_script.py
+            "
 
       - name: Success Summary
         if: success()
@@ -322,9 +396,10 @@ jobs:
           echo ""
           if [[ "${{ needs.validate-host-config.outputs.is_localhost }}" == "true" ]]; then
             echo "✅ Local development mode: Challenge processed on self-hosted runner"
-            echo "✅ Docker container: python:3.9-slim (architecture independent)"
+            echo "✅ Docker containers: python:3.9-slim (architecture independent)"
+            echo "✅ macOS + Docker approach: Works on ARM64 and AMD64 architectures"
             echo "✅ EvalAI server: ${{ needs.validate-host-config.outputs.host_url }}"
-            echo "✅ Self-hosted runner successfully connected to local server"
+            echo "✅ Self-hosted runner successfully connected to local server via Docker"
           else
             echo "✅ Production mode: Challenge processed on GitHub-hosted runner"
             echo "✅ EvalAI server: ${{ needs.validate-host-config.outputs.host_url }}"
@@ -340,13 +415,19 @@ jobs:
           echo "=============================="
           echo ""
           if [[ "${{ needs.validate-host-config.outputs.is_localhost }}" == "true" ]]; then
-            echo "🏠 Local development mode detected (Docker container)"
+            echo "🏠 Local development mode detected (macOS + Docker)"
             echo "💡 Common issues for self-hosted runners with Docker:"
-            echo "   • EvalAI server not running or not accessible from container"
+            echo "   • EvalAI server not running or not accessible from Docker containers"
             echo "   • Self-hosted runner not properly configured"
+            echo "   • Docker not installed or not running on the runner machine"
             echo "   • Docker networking issues between container and host"
-            echo "   • Network connectivity issues between runner and server"
+            echo "   • Need to use host.docker.internal instead of localhost in host_config.json"
             echo "   • Invalid authentication credentials"
+            echo ""
+            echo "🔧 Quick fixes to try:"
+            echo "   • Update host_config.json URL to: http://host.docker.internal:8888"
+            echo "   • Ensure EvalAI server runs with: python manage.py runserver 0.0.0.0:8888"
+            echo "   • Check Docker is running: docker --version"
             echo ""
             echo "🔍 Check the logs above for specific error details"
           else

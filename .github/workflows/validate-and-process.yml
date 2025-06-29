@@ -405,6 +405,7 @@ jobs:
             -w /workspace \
             -e IS_VALIDATION='True' \
             -e GITHUB_CONTEXT='${{ toJson(github) }}' \
+            -e GITHUB_REPOSITORY='${{ github.repository }}' \
             -e GITHUB_AUTH_TOKEN='${{ secrets.AUTH_TOKEN }}' \
             python:3.9-slim \
             bash -c "

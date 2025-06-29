@@ -110,17 +110,23 @@ jobs:
           echo "   • Install and configure on your local machine"
           echo "   • Start the runner service"
           echo ""
-          echo "2️⃣  EvalAI server running locally:"
+          echo "2️⃣  Docker installed and running:"
+          echo "   • Docker Engine must be available on the runner machine"
+          echo "   • Runner will use python:3.9-slim container (architecture independent)"
+          echo "   • This solves compatibility issues with ARM64/macOS architectures"
+          echo ""
+          echo "3️⃣  EvalAI server running locally:"
           echo "   • Server URL: ${{ needs.validate-host-config.outputs.host_url }}"
-          echo "   • Ensure it's accessible from your machine"
+          echo "   • Ensure it's accessible from Docker containers (use host networking)"
           echo "   • Verify API endpoints are responding"
           echo ""
-          echo "3️⃣  Network connectivity:"
-          echo "   • Runner can reach your EvalAI server"
+          echo "4️⃣  Network connectivity:"
+          echo "   • Docker container can reach your EvalAI server"
           echo "   • No firewall blocking connections"
+          echo "   • Consider using host.docker.internal for macOS/Windows"
           echo ""
-          echo "⚠️  This job will continue on your self-hosted runner..."
-          echo "⚠️  If you don't have a self-hosted runner, the next job will fail"
+          echo "⚠️  This job will continue on your self-hosted runner with Docker..."
+          echo "⚠️  If you don't have a self-hosted runner with Docker, the next job will fail"
 
   process-evalai-challenge:
     needs: [validate-host-config, check-self-hosted-requirements]
@@ -129,6 +135,9 @@ jobs:
       needs.validate-host-config.outputs.is_valid == 'true' &&
       (needs.check-self-hosted-requirements.result == 'success' || needs.check-self-hosted-requirements.result == 'skipped')
     runs-on: ${{ needs.validate-host-config.outputs.requires_self_hosted == 'true' && 'self-hosted' || 'ubuntu-latest' }}
+    
+    # Use Docker container for self-hosted runners to ensure architecture independence
+    container: ${{ needs.validate-host-config.outputs.requires_self_hosted == 'true' && 'python:3.9-slim' || null }}
     
     steps:
       - name: Checkout challenge branch
@@ -140,18 +149,29 @@ jobs:
         run: |
           echo "🔍 ENVIRONMENT INFORMATION"
           echo "========================="
-          echo "Runner Type: ${{ needs.validate-host-config.outputs.requires_self_hosted == 'true' && 'Self-hosted' || 'GitHub-hosted' }}"
+          echo "Runner Type: ${{ needs.validate-host-config.outputs.requires_self_hosted == 'true' && 'Self-hosted (Docker)' || 'GitHub-hosted' }}"
           echo "EvalAI URL: ${{ needs.validate-host-config.outputs.host_url }}"
           echo "Is Localhost: ${{ needs.validate-host-config.outputs.is_localhost }}"
           echo "OS: $(uname -s)"
           echo "Architecture: $(uname -m)"
           echo "Working Directory: $(pwd)"
+          echo "Python Version: $(python3 --version)"
+          echo "Container: ${{ needs.validate-host-config.outputs.requires_self_hosted == 'true' && 'python:3.9-slim' || 'None' }}"
           echo ""
 
-      - name: Set up Python
+      - name: Set up Python (GitHub-hosted only)
+        if: needs.validate-host-config.outputs.requires_self_hosted != 'true'
         uses: actions/setup-python@v4
         with:
           python-version: 3.9.21
+
+      - name: Install system dependencies (Docker container only)
+        if: needs.validate-host-config.outputs.requires_self_hosted == 'true'
+        run: |
+          echo "📦 Installing system dependencies in Docker container"
+          apt-get update
+          apt-get install -y curl netcat-traditional jq git
+          echo "✅ System dependencies installed"
 
       - name: Install dependencies
         run: |
@@ -166,11 +186,12 @@ jobs:
       - name: Pre-flight Local Server Health Check
         if: needs.validate-host-config.outputs.is_localhost == 'true'
         run: |
-          echo "🏥 LOCAL SERVER HEALTH CHECK"
-          echo "============================"
+          echo "🏥 LOCAL SERVER HEALTH CHECK (Docker Container)"
+          echo "==============================================="
           
           SERVER_URL="${{ needs.validate-host-config.outputs.host_url }}"
           echo "🔍 Checking EvalAI server at: $SERVER_URL"
+          echo "🐳 Running in Docker container - checking host networking"
           echo ""
           
           # Extract host and port from URL
@@ -186,15 +207,52 @@ jobs:
           fi
           
           echo "🌐 Resolved to Host: $HOST, Port: $PORT"
+          
+          # Try different host variations for Docker networking
+          HOSTS_TO_TRY=("$HOST")
+          if [[ "$HOST" == "localhost" || "$HOST" == "127.0.0.1" ]]; then
+            HOSTS_TO_TRY+=("host.docker.internal" "172.17.0.1")
+            echo "🔄 Will try multiple host variants for Docker networking:"
+            printf '   • %s\n' "${HOSTS_TO_TRY[@]}"
+          fi
           echo ""
           
-          # Test basic connectivity
+          # Test basic connectivity with multiple host variants
           echo "1️⃣  Testing basic connectivity..."
-          if timeout 10 nc -z "$HOST" "$PORT" 2>/dev/null; then
-            echo "   ✅ Port $PORT is reachable on $HOST"
-          else
-            echo "   ❌ Port $PORT is NOT reachable on $HOST"
-            echo "   💡 Make sure your EvalAI server is running and listening on $HOST:$PORT"
+          CONNECTIVITY_SUCCESS=false
+          WORKING_HOST=""
+          
+          for TEST_HOST in "${HOSTS_TO_TRY[@]}"; do
+            echo "   🔍 Testing connection to $TEST_HOST:$PORT..."
+            if timeout 10 nc -z "$TEST_HOST" "$PORT" 2>/dev/null; then
+              echo "   ✅ Port $PORT is reachable on $TEST_HOST"
+              CONNECTIVITY_SUCCESS=true
+              WORKING_HOST="$TEST_HOST"
+              break
+            else
+              echo "   ❌ Port $PORT is NOT reachable on $TEST_HOST"
+            fi
+          done
+          
+          if [[ "$CONNECTIVITY_SUCCESS" != "true" ]]; then
+            echo "   💥 Unable to connect to EvalAI server on any host variant"
+            echo "   💡 Make sure your EvalAI server is running and accessible from Docker"
+            echo ""
+            echo "🚨 DOCKER NETWORKING TROUBLESHOOTING:"
+            echo "   1. If running EvalAI locally, use: python manage.py runserver 0.0.0.0:8888"
+            echo "   2. Update host_config.json to use one of these URLs:"
+            printf "      • http://host.docker.internal:%s (macOS/Windows)\n" "$PORT"
+            printf "      • http://172.17.0.1:%s (Linux Docker bridge)\n" "$PORT"
+            printf "      • http://0.0.0.0:%s (if server binds to all interfaces)\n" "$PORT"
+            echo "   3. Ensure Docker can access host network"
+            echo "   4. Check firewall settings"
+            exit 1
+          fi
+          
+          # Update SERVER_URL to use working host
+          if [[ "$WORKING_HOST" != "$HOST" ]]; then
+            SERVER_URL="http://$WORKING_HOST:$PORT"
+            echo "   🔄 Updated server URL to: $SERVER_URL"
           fi
           
           # Test HTTP endpoint
@@ -219,13 +277,14 @@ jobs:
             echo "🚨 TROUBLESHOOTING STEPS:"
             echo "   1. Verify your EvalAI server is running:"
             echo "      python manage.py runserver 0.0.0.0:8888"
-            echo "   2. Check if the server is binding to the correct interface"
-            echo "   3. Verify no firewall is blocking the connection"
+            echo "   2. Check if the server is binding to the correct interface (0.0.0.0)"
+            echo "   3. Update host_config.json with Docker-compatible URL"
             echo "   4. Check server logs for errors"
             echo ""
-            echo "   If using Docker:"
-            echo "      docker-compose up -d"
-            echo "      docker-compose ps"
+            echo "   Docker networking tips:"
+            echo "   • Use host.docker.internal instead of localhost on macOS/Windows"
+            echo "   • Use 172.17.0.1 (Docker bridge IP) on Linux"
+            echo "   • Ensure server binds to 0.0.0.0, not just 127.0.0.1"
             echo ""
             exit 1
           fi
@@ -263,6 +322,7 @@ jobs:
           echo ""
           if [[ "${{ needs.validate-host-config.outputs.is_localhost }}" == "true" ]]; then
             echo "✅ Local development mode: Challenge processed on self-hosted runner"
+            echo "✅ Docker container: python:3.9-slim (architecture independent)"
             echo "✅ EvalAI server: ${{ needs.validate-host-config.outputs.host_url }}"
             echo "✅ Self-hosted runner successfully connected to local server"
           else
@@ -280,10 +340,11 @@ jobs:
           echo "=============================="
           echo ""
           if [[ "${{ needs.validate-host-config.outputs.is_localhost }}" == "true" ]]; then
-            echo "🏠 Local development mode detected"
-            echo "💡 Common issues for self-hosted runners:"
-            echo "   • EvalAI server not running or not accessible"
+            echo "🏠 Local development mode detected (Docker container)"
+            echo "💡 Common issues for self-hosted runners with Docker:"
+            echo "   • EvalAI server not running or not accessible from container"
             echo "   • Self-hosted runner not properly configured"
+            echo "   • Docker networking issues between container and host"
             echo "   • Network connectivity issues between runner and server"
             echo "   • Invalid authentication credentials"
             echo ""

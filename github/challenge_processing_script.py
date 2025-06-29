@@ -3,6 +3,7 @@ import json
 import os
 import requests
 import sys
+import time
 import urllib3
 import socket
 import platform
@@ -244,7 +245,7 @@ if __name__ == "__main__":
     zip_file = open(CHALLENGE_ZIP_FILE_PATH, "rb")
     file = {"zip_configuration": zip_file}
 
-    data = {"GITHUB_REPOSITORY": GITHUB_REPOSITORY}
+    data = {"GITHUB_REPOSITORY": GITHUB_REPOSITORY or "unknown-repo"}
 
     # Configure SSL verification based on whether we're using localhost
     verify_ssl = not is_localhost
@@ -252,6 +253,8 @@ if __name__ == "__main__":
 
     try:
         print(f"\n🌐 Sending request to EvalAI server...")
+        print(f"💡 Adding small delay to avoid rate limiting...")
+        time.sleep(1)  # Brief delay to avoid overwhelming the server
         response = requests.post(url, data=data, headers=headers, files=file, verify=verify_ssl)
 
         if (
@@ -294,7 +297,18 @@ if __name__ == "__main__":
         os.environ["CHALLENGE_ERRORS"] = error_message
         
     except requests.exceptions.HTTPError as err:
-        if response.status_code in EVALAI_ERROR_CODES:
+        if response.status_code == 429:
+            error_message = f"\n🚨 RATE LIMITED (HTTP 429)\n"
+            error_message += f"❌ EvalAI server is limiting request frequency\n"
+            error_message += f"💡 This is normal for development servers - they limit requests to prevent overload\n\n"
+            error_message += f"🔧 Solutions:\n"
+            error_message += f"   • Wait a few minutes and try again\n"
+            error_message += f"   • Check if server has rate limiting enabled\n"
+            error_message += f"   • Consider increasing server rate limits for development\n"
+            error_message += f"\nOriginal error: {err}"
+            print(error_message)
+            os.environ["CHALLENGE_ERRORS"] = error_message
+        elif response.status_code in EVALAI_ERROR_CODES:
             is_token_valid = validate_token(response.json())
             if is_token_valid:
                 error = response.json()["error"]
@@ -345,18 +359,24 @@ if __name__ == "__main__":
                 print("   This is expected when your local EvalAI server isn't running.")
                 
         elif VALIDATION_STEP == "True" and check_if_pull_request():
-            pr_number = GITHUB_CONTEXT["event"]["number"]
-            add_pull_request_comment(
-                GITHUB_AUTH_TOKEN,
-                os.path.basename(GITHUB_REPOSITORY),
-                pr_number,
-                errors,
-            )
+            pr_number = GITHUB_CONTEXT.get("event", {}).get("number")
+            if not pr_number:
+                print("⚠️  Warning: Could not get PR number from GITHUB_CONTEXT")
+                print("   Skipping pull request comment creation")
+            else:
+                repo_name = os.path.basename(GITHUB_REPOSITORY) if GITHUB_REPOSITORY else "unknown-repo"
+                add_pull_request_comment(
+                    GITHUB_AUTH_TOKEN,
+                    repo_name,
+                    pr_number,
+                    errors,
+                )
         else:
             issue_title = f"Following errors occurred while {'validating' if VALIDATION_STEP == 'True' else 'processing'} the challenge config:"
+            repo_name = os.path.basename(GITHUB_REPOSITORY) if GITHUB_REPOSITORY else "unknown-repo"
             create_github_repository_issue(
                 GITHUB_AUTH_TOKEN,
-                os.path.basename(GITHUB_REPOSITORY),
+                repo_name,
                 issue_title,
                 errors,
             )

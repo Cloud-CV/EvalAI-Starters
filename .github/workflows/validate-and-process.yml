@@ -311,25 +311,51 @@ jobs:
             echo "   🔄 Updated server URL to: $SERVER_URL"
           fi
           
-          # Test HTTP endpoint using Docker
+          # Test HTTP endpoint using Docker (with rate limiting protection)
           echo ""
           echo "2️⃣  Testing HTTP endpoint from Docker container..."
-          if docker run --rm --add-host host.docker.internal:host-gateway alpine/curl:latest curl -s --connect-timeout 10 --max-time 10 "$SERVER_URL/" > /dev/null 2>&1; then
-            echo "   ✅ HTTP endpoint is responding at $SERVER_URL"
+          
+          # Make request with better error handling
+          HTTP_RESPONSE=$(docker run --rm --add-host host.docker.internal:host-gateway alpine/curl:latest curl -s -w "HTTP_CODE:%{http_code}" --connect-timeout 10 --max-time 10 "$SERVER_URL/" 2>/dev/null)
+          HTTP_CODE=$(echo "$HTTP_RESPONSE" | grep -o "HTTP_CODE:[0-9]*" | cut -d: -f2)
+          
+          if [[ "$HTTP_CODE" == "200" || "$HTTP_CODE" == "201" || "$HTTP_CODE" == "302" || "$HTTP_CODE" == "303" ]]; then
+            echo "   ✅ HTTP endpoint is responding at $SERVER_URL (Status: $HTTP_CODE)"
+            
+            # Wait before next request to avoid rate limiting
+            echo "   ⏳ Waiting 2 seconds to avoid rate limiting..."
+            sleep 2
             
             # Test API endpoint
             echo ""
             echo "3️⃣  Testing API endpoint from Docker container..."
             API_URL="$SERVER_URL/api/"
-            if docker run --rm --add-host host.docker.internal:host-gateway alpine/curl:latest curl -s --connect-timeout 10 --max-time 10 "$API_URL" > /dev/null 2>&1; then
-              echo "   ✅ API endpoint is accessible at $API_URL"
+            API_RESPONSE=$(docker run --rm --add-host host.docker.internal:host-gateway alpine/curl:latest curl -s -w "HTTP_CODE:%{http_code}" --connect-timeout 10 --max-time 10 "$API_URL" 2>/dev/null)
+            API_CODE=$(echo "$API_RESPONSE" | grep -o "HTTP_CODE:[0-9]*" | cut -d: -f2)
+            
+            if [[ "$API_CODE" == "200" || "$API_CODE" == "201" || "$API_CODE" == "302" || "$API_CODE" == "404" ]]; then
+              echo "   ✅ API endpoint is accessible at $API_URL (Status: $API_CODE)"
+            elif [[ "$API_CODE" == "429" ]]; then
+              echo "   ⚠️  Rate limited (HTTP 429) - server is responding but limiting requests"
+              echo "   💡 This is normal for development servers with rate limiting enabled"
             else
-              echo "   ⚠️  API endpoint test failed, but server is responding"
+              echo "   ⚠️  API endpoint test failed (Status: $API_CODE), but server is responding"
               echo "   💡 This might be normal if API requires authentication"
             fi
-          else
-            echo "   ❌ HTTP endpoint is not responding at $SERVER_URL"
-            echo ""
+                     elif [[ "$HTTP_CODE" == "429" ]]; then
+             echo "   ⚠️  Rate limited (HTTP 429) at $SERVER_URL"
+             echo "   💡 Server is responding but limiting request frequency"
+             echo "   💡 This confirms the server is working - rate limiting is normal"
+           elif [[ -z "$HTTP_CODE" || "$HTTP_CODE" == "000" ]]; then
+             echo "   ❌ HTTP endpoint is not responding at $SERVER_URL"
+           else
+             echo "   ⚠️  HTTP endpoint returned status: $HTTP_CODE"
+             echo "   💡 Server is responding but returned unexpected status"
+           fi
+           
+           # Only exit with error if server is completely unreachable
+           if [[ -z "$HTTP_CODE" || "$HTTP_CODE" == "000" ]]; then
+             echo ""
             echo "🚨 TROUBLESHOOTING STEPS:"
             echo "   1. Start EvalAI using Docker Compose:"
             echo "      cd /path/to/your/evalai"
@@ -344,6 +370,10 @@ jobs:
             echo "   • Use host.docker.internal instead of localhost on macOS/Windows"
             echo "   • Use 172.17.0.1 (Docker bridge IP) on Linux"
             echo "   • Node.js service at :8888 proxies API calls to Django at :8000"
+            echo ""
+            echo "   Rate limiting tips:"
+            echo "   • HTTP 429 responses are normal - means server is working"
+            echo "   • Workflow includes delays to avoid overwhelming your dev server"
             echo ""
             exit 1
           fi

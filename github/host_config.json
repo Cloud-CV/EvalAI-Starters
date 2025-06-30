@@ -1,5 +1,5 @@
 {
-	"token": "<your_actual_evalai_token>",
-	"team_pk": "<your_actual_team_pk>",
-	"evalai_host_url": "http://host.docker.internal:8888"
+	"token": "<evalai_user_auth_token>",
+	"team_pk": "<host_team_pk>",
+	"evalai_host_url": "<evalai_host_url>"
 }

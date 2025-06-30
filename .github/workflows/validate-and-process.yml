@@ -42,7 +42,7 @@ jobs:
           echo "host_url=$HOST_URL" >> $GITHUB_OUTPUT
 
           # Enhanced localhost detection (includes Docker networking hosts)
-          if [[ "$HOST_URL" == *"127.0.0.1"* ]] || [[ "$HOST_URL" == *"localhost"* ]] || [[ "$HOST_URL" == *"0.0.0.0"* ]] || [[ "$HOST_URL" == *"host.docker.internal"* ]] || [[ "$HOST_URL" == *"172.17.0.1"* ]] || [[ "$HOST_URL" == *"192.168."* ]]; then
+          if [[ "$HOST_URL" == *"127.0.0.1"* ]] || [[ "$HOST_URL" == *"localhost"* ]] || [[ "$HOST_URL" == *"0.0.0.0"* ]] || [[ "$HOST_URL" == *"host.docker.internal"* ]]; then
             echo "is_localhost=true" >> $GITHUB_OUTPUT
             echo "requires_self_hosted=true" >> $GITHUB_OUTPUT
             echo "🏠 Localhost/Docker networking server detected: $HOST_URL"

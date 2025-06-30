@@ -3,10 +3,7 @@ import json
 import os
 import requests
 import sys
-import time
 import urllib3
-import socket
-import platform
 from urllib.parse import urlparse
 
 from config import *
@@ -24,7 +21,11 @@ from utils import (
 
 sys.dont_write_bytecode = True
 
-GITHUB_CONTEXT = json.loads(os.getenv("GITHUB_CONTEXT"))
+# -----------------------------------------------------------------------------
+# Environment variables provided by the workflow
+# -----------------------------------------------------------------------------
+
+GITHUB_CONTEXT = json.loads(os.getenv("GITHUB_CONTEXT", "{}"))
 
 GITHUB_AUTH_TOKEN = os.getenv("GITHUB_AUTH_TOKEN")
 if not GITHUB_AUTH_TOKEN:
@@ -55,84 +56,16 @@ def is_localhost_url(url):
         "127.0.0.1",
         "localhost", 
         "0.0.0.0",
-        "host.docker.internal",
-        "172.17.0.1",
-        "192.168."
+        "host.docker.internal"
     ]
     return any(indicator in url.lower() for indicator in localhost_indicators)
 
 
 def get_runner_info():
-    """
-    Get information about the current runner environment
-    
-    Returns:
-        dict: Information about the runner
-    """
-    runner_info = {
-        "is_github_actions": bool(os.getenv("GITHUB_ACTIONS")),
-        "runner_name": os.getenv("RUNNER_NAME", "unknown"),
-        "runner_os": os.getenv("RUNNER_OS", platform.system()),
-        "runner_arch": os.getenv("RUNNER_ARCH", platform.machine()),
+    """Return a minimal dict about the runner (only what we need for error msgs)."""
+    return {
         "is_self_hosted": os.getenv("RUNNER_ENVIRONMENT") != "github-hosted",
-        "hostname": socket.gethostname(),
-        "platform": platform.platform(),
     }
-    return runner_info
-
-
-def test_server_connectivity(url, timeout=10):
-    """
-    Test connectivity to the EvalAI server
-    
-    Arguments:
-        url {str}: The server URL to test
-        timeout {int}: Connection timeout in seconds
-    
-    Returns:
-        dict: Test results with status and details
-    """
-    result = {
-        "success": False,
-        "details": [],
-        "error": None
-    }
-    
-    try:
-        parsed_url = urlparse(url)
-        host = parsed_url.hostname
-        port = parsed_url.port or (443 if parsed_url.scheme == 'https' else 80)
-        
-        result["details"].append(f"Testing connectivity to {host}:{port}")
-        
-        # Test socket connection
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(timeout)
-        socket_result = sock.connect_ex((host, port))
-        sock.close()
-        
-        if socket_result == 0:
-            result["details"].append(f"✅ Socket connection successful to {host}:{port}")
-            
-            # Test HTTP request
-            try:
-                response = requests.get(url, timeout=timeout, verify=not is_localhost_url(url))
-                result["details"].append(f"✅ HTTP request successful (Status: {response.status_code})")
-                result["success"] = True
-            except requests.exceptions.RequestException as e:
-                result["details"].append(f"⚠️  HTTP request failed: {e}")
-                result["success"] = False  # Still consider it a partial success since socket worked
-                
-        else:
-            result["details"].append(f"❌ Socket connection failed to {host}:{port}")
-            result["success"] = False
-            
-    except Exception as e:
-        result["error"] = str(e)
-        result["details"].append(f"❌ Connectivity test failed: {e}")
-        result["success"] = False
-    
-    return result
 
 
 def configure_requests_for_localhost():
@@ -145,30 +78,8 @@ def configure_requests_for_localhost():
     print("INFO: SSL verification disabled for localhost development server")
 
 
-def print_environment_info():
-    """
-    Print detailed information about the current environment
-    """
-    runner_info = get_runner_info()
-    
-    print("\n🔍 ENVIRONMENT INFORMATION")
-    print("=" * 50)
-    print(f"GitHub Actions: {runner_info['is_github_actions']}")
-    print(f"Runner Type: {'Self-hosted' if runner_info['is_self_hosted'] else 'GitHub-hosted'}")
-    print(f"Runner Name: {runner_info['runner_name']}")
-    print(f"Operating System: {runner_info['runner_os']}")
-    print(f"Architecture: {runner_info['runner_arch']}")
-    print(f"Hostname: {runner_info['hostname']}")
-    print(f"Platform: {runner_info['platform']}")
-    print(f"Working Directory: {os.getcwd()}")
-    print(f"Python Version: {sys.version}")
-    print("=" * 50)
-
-
 if __name__ == "__main__":
     
-    print_environment_info()
-
     configs = load_host_configs(HOST_CONFIG_FILE_PATH)
     if configs:
         HOST_AUTH_TOKEN = configs[0]
@@ -189,38 +100,6 @@ if __name__ == "__main__":
         configure_requests_for_localhost()
         print(f"INFO: Using localhost server: {EVALAI_HOST_URL}")
         
-        # For localhost, perform connectivity test
-        print(f"\n🔍 Testing connectivity to localhost server...")
-        connectivity_test = test_server_connectivity(EVALAI_HOST_URL)
-        
-        for detail in connectivity_test["details"]:
-            print(f"   {detail}")
-            
-        if not connectivity_test["success"]:
-            error_message = f"\n🚨 LOCALHOST SERVER CONNECTIVITY FAILED\n"
-            error_message += f"❌ Cannot reach EvalAI server at: {EVALAI_HOST_URL}\n\n"
-            error_message += "📋 Troubleshooting steps:\n"
-            error_message += "   1. Ensure your EvalAI server is running\n"
-            error_message += "   2. Verify the server is listening on the correct interface and port\n"
-            error_message += "   3. Check for firewall or network restrictions\n"
-            error_message += "   4. Confirm the URL in host_config.json is correct\n\n"
-            
-            if runner_info['is_self_hosted']:
-                error_message += "💡 Self-hosted runner tips:\n"
-                error_message += "   • Make sure the server is accessible from your runner machine\n"
-                error_message += "   • Test manually: curl -v " + EVALAI_HOST_URL + "\n"
-            else:
-                error_message += "⚠️  You're using a GitHub-hosted runner with localhost URL\n"
-                error_message += "   This will not work. Please use a self-hosted runner for localhost development.\n"
-            
-            print(error_message)
-            os.environ["CHALLENGE_ERRORS"] = error_message
-            
-            # Don't exit immediately for localhost connectivity issues in validation mode
-            # Let the request attempt provide more specific error information
-        else:
-            print("✅ Localhost server connectivity test passed!")
-
     # Fetching the url
     if VALIDATION_STEP == "True":
         print(f"\n🔍 VALIDATION MODE: Validating challenge configuration...")
@@ -253,18 +132,12 @@ if __name__ == "__main__":
 
     try:
         print(f"\n🌐 Sending request to EvalAI server...")
-        print(f"💡 Adding small delay to avoid rate limiting...")
-        time.sleep(1)  # Brief delay to avoid overwhelming the server
         response = requests.post(url, data=data, headers=headers, files=file, verify=verify_ssl)
 
-        if (
-            response.status_code != http.HTTPStatus.OK
-            and response.status_code != http.HTTPStatus.CREATED
-        ):
+        if response.status_code != http.HTTPStatus.OK and response.status_code != http.HTTPStatus.CREATED:
             response.raise_for_status()
         else:
-            success_message = response.json().get("Success", "Operation completed successfully")
-            print(f"\n✅ SUCCESS: {success_message}")
+            print("\n✅ Challenge processed successfully on EvalAI")
             
     except requests.exceptions.ConnectionError as conn_err:
         # Handle connection errors specifically for localhost
@@ -384,4 +257,4 @@ if __name__ == "__main__":
         print(f"\nExiting the {os.path.basename(__file__)} script after failure\n")
         sys.exit(1)
 
-    print(f"\n✅ Exiting the {os.path.basename(__file__)} script after success\n")
+    print("\n✅ Script completed\n")

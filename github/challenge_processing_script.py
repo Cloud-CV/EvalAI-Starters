@@ -118,7 +118,7 @@ if __name__ == "__main__":
     zip_file = open(CHALLENGE_ZIP_FILE_PATH, "rb")
     file = {"zip_configuration": zip_file}
 
-    data = {"GITHUB_REPOSITORY": GITHUB_REPOSITORY or "unknown-repo"}
+    data = {"GITHUB_REPOSITORY": GITHUB_REPOSITORY}
 
     # Configure SSL verification based on whether we're using localhost
     verify_ssl = not is_localhost
@@ -235,10 +235,9 @@ if __name__ == "__main__":
                 print("⚠️  Warning: Could not get PR number from GITHUB_CONTEXT")
                 print("   Skipping pull request comment creation")
             else:
-                repo_name = os.path.basename(GITHUB_REPOSITORY) if GITHUB_REPOSITORY else "unknown-repo"
                 add_pull_request_comment(
                     GITHUB_AUTH_TOKEN,
-                    repo_name,
+                    os.path.basename(GITHUB_REPOSITORY),
                     pr_number,
                     errors,
                 )
@@ -246,7 +245,7 @@ if __name__ == "__main__":
             issue_title = (
                 "Following errors occurred while validating the challenge config:"
             )
-            repo_name = os.path.basename(GITHUB_REPOSITORY) if GITHUB_REPOSITORY else "unknown-repo"
+            repo_name = os.path.basename(GITHUB_REPOSITORY) if GITHUB_REPOSITORY else ""
             create_github_repository_issue(
                 GITHUB_AUTH_TOKEN,
                 repo_name,

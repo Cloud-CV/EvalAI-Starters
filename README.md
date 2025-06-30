@@ -107,16 +107,18 @@ In order to test the evaluation script locally before uploading it to [EvalAI](h
    {
      "token": "<your_local_evalai_auth_token>",
      "team_pk": "<your_local_team_pk>",
-     "evalai_host_url": "http://localhost:8000"
+     "evalai_host_url": "http://host.docker.internal:8000"
    }
    ```
+   *host.docker.internal* : Docker's built-in hostname that points to the Docker host (your machine).
+   *8000* : Port where Backend API for the EvalAI server used to create challenges runs.
 
-   *If the runner can’t resolve `localhost`, use `http://host.docker.internal:8000`.*
 
-4. **Create (or switch to) the `challenge` branch locally**
+
+5. **Create (or switch to) the `challenge` branch locally**
    Commit your config / template / script changes here , as you would when creating a challenge using Github.
 
-5. **Verify the result**
+6. **Verify the result**
    Go to [Hosted Challenges](http://127.0.0.1:8888/web/hosted-challenges) on your local server and confirm your challenge appears and renders correctly.
 
 ---

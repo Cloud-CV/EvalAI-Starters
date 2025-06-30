@@ -49,31 +49,24 @@ jobs:
             echo "🤖 Self-hosted runner required for local development"
             echo "🐳 Docker networking will be used for container-to-host communication"
             echo ""
-            echo "📋 Requirements for local challenge creation:"
-            echo "   ✅ Self-hosted GitHub Actions runner must be configured"
-            echo "   ✅ EvalAI server must be running at: $HOST_URL"
-            echo "   ✅ Network connectivity between runner and server"
-            echo ""
+            echo "📋 Requirements: self-hosted runner + running local EvalAI server"
             echo "⚠️  Note: GitHub hosted runners cannot connect to localhost"
             echo "⚠️  This workflow will use your self-hosted runner instead"
           fi
 
           # Validate required fields
           if [[ -z "$TOKEN" || "$TOKEN" == "<evalai_user_auth_token>" ]]; then
-            echo "❌ Invalid or missing token in host_config.json" | tee -a validation_error.log
-            echo "💡 Please replace <evalai_user_auth_token> with your actual EvalAI token" | tee -a validation_error.log
+            echo "❌ Invalid or missing token" | tee -a validation_error.log
             echo "is_valid=false" >> $GITHUB_OUTPUT
           fi
 
           if [[ -z "$TEAM_PK" || "$TEAM_PK" == "<host_team_pk>" ]]; then
-            echo "❌ Invalid or missing team_pk in host_config.json" | tee -a validation_error.log
-            echo "💡 Please replace <host_team_pk> with your actual team primary key" | tee -a validation_error.log
+            echo "❌ Invalid or missing team_pk" | tee -a validation_error.log
             echo "is_valid=false" >> $GITHUB_OUTPUT
           fi
 
           if [[ -z "$HOST_URL" || "$HOST_URL" == "<evalai_host_url>" ]]; then
-            echo "❌ Invalid or missing evalai_host_url in host_config.json" | tee -a validation_error.log
-            echo "💡 Please replace <evalai_host_url> with your EvalAI server URL" | tee -a validation_error.log
+            echo "❌ Invalid or missing evalai_host_url" | tee -a validation_error.log
             echo "is_valid=false" >> $GITHUB_OUTPUT
           fi
 
@@ -81,7 +74,7 @@ jobs:
         if: steps.validate.outputs.is_valid == 'false'
         uses: peter-evans/create-issue-from-file@v4
         with:
-          title: "❌ host_config.json validation failed"
+          title: "host_config.json validation failed"
           content-filepath: validation_error.log
           labels: |
             bug

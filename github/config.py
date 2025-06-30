@@ -24,8 +24,5 @@ IGNORE_FILES = [
 ]
 CHALLENGE_ZIP_FILE_PATH = "challenge_config.zip"
 GITHUB_REPOSITORY = os.getenv("GITHUB_REPOSITORY")
-if not GITHUB_REPOSITORY:
-    print("⚠️  Warning: GITHUB_REPOSITORY environment variable not set")
-    print("   This may happen when running outside GitHub Actions")
 GITHUB_EVENT_NAME = os.getenv("GITHUB_EVENT_NAME")
 VALIDATION_STEP = os.getenv("IS_VALIDATION")

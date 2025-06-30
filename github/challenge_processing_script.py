@@ -169,37 +169,34 @@ if __name__ == "__main__":
         print(error_message)
         os.environ["CHALLENGE_ERRORS"] = error_message
         
-    except requests.exceptions.HTTPError as err:
-        if response.status_code == 429:
-            error_message = f"\n🚨 RATE LIMITED (HTTP 429)\n"
-            error_message += f"❌ EvalAI server is limiting request frequency\n"
-            error_message += f"💡 This is normal for development servers - they limit requests to prevent overload\n\n"
-            error_message += f"🔧 Solutions:\n"
-            error_message += f"   • Wait a few minutes and try again\n"
-            error_message += f"   • Check if server has rate limiting enabled\n"
-            error_message += f"   • Consider increasing server rate limits for development\n"
-            error_message += f"\nOriginal error: {err}"
-            print(error_message)
-            os.environ["CHALLENGE_ERRORS"] = error_message
-        elif response.status_code in EVALAI_ERROR_CODES:
+        if response.status_code in EVALAI_ERROR_CODES:
             is_token_valid = validate_token(response.json())
             if is_token_valid:
                 error = response.json()["error"]
-                error_message = f"\nFollowing errors occurred while {'validating' if VALIDATION_STEP == 'True' else 'processing'} the challenge config:\n{error}"
+                error_message = "\nFollowing errors occurred while validating the challenge config:\n{}".format(
+                    error
+                )
                 print(error_message)
                 os.environ["CHALLENGE_ERRORS"] = error_message
         else:
-            error_message = f"\nHTTP Error occurred while {'validating' if VALIDATION_STEP == 'True' else 'processing'} the challenge config: {err}"
-            print(error_message)
-            os.environ["CHALLENGE_ERRORS"] = error_message
+            print(
+                "\nFollowing errors occurred while validating the challenge config: {}".format(
+                    err
+                )
+            )
+            os.environ["CHALLENGE_ERRORS"] = str(err)
             
     except Exception as e:
         if VALIDATION_STEP == "True":
-            error_message = f"\nFollowing errors occurred while validating the challenge config: {e}"
+            error_message = "\nFollowing errors occurred while validating the challenge config: {}".format(
+                e
+            )
             print(error_message)
             os.environ["CHALLENGE_ERRORS"] = error_message
         else:
-            error_message = f"\nFollowing errors occurred while processing the challenge config: {e}"
+            error_message = "\nFollowing errors occurred while processing the challenge config: {}".format(
+                e
+            )
             print(error_message)
             os.environ["CHALLENGE_ERRORS"] = error_message
 
@@ -245,7 +242,9 @@ if __name__ == "__main__":
                     errors,
                 )
         else:
-            issue_title = f"Following errors occurred while {'validating' if VALIDATION_STEP == 'True' else 'processing'} the challenge config:"
+            issue_title = (
+                "Following errors occurred while validating the challenge config:"
+            )
             repo_name = os.path.basename(GITHUB_REPOSITORY) if GITHUB_REPOSITORY else "unknown-repo"
             create_github_repository_issue(
                 GITHUB_AUTH_TOKEN,
@@ -253,8 +252,11 @@ if __name__ == "__main__":
                 issue_title,
                 errors,
             )
-        
-        print(f"\nExiting the {os.path.basename(__file__)} script after failure\n")
-        sys.exit(1)
+            print(
+                    "\nExiting the {} script after failure\n".format(
+                        os.path.basename(__file__)
+                    )
+                )
+            sys.exit(1)
 
-    print("\n✅ Script completed\n")
+    print("\nExiting the {} script after success\n".format(os.path.basename(__file__)))

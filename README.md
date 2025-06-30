@@ -74,78 +74,74 @@ In order to test the evaluation script locally before uploading it to [EvalAI](h
 
 3. Run the command `python -m worker.run` from the directory where `annotations/` `challenge_data/` and `worker/` directories are present. If the command runs successfully, then the evaluation script works locally and will work on the server as well.
 
-## Local Development with Self-Hosted Runners
+## Local Development with a Self-Hosted Runner
 
-For local EvalAI challenge development, this repository supports **self-hosted GitHub Actions runners** that can connect to your localhost EvalAI server.
+For local server development, you can run the EvalAI server on your local machine and test your challenge configuration before deploying it publicly. This requires a **self-hosted GitHub Actions runner** to bridge the gap between GitHub and your local computer.
 
-### When to use self-hosted runners:
-- ✅ Developing with a local EvalAI server (`http://localhost:8888`)
-- ✅ Testing challenges before deploying to production
-- ✅ Rapid iteration during development
-- ✅ Working with custom EvalAI configurations
+#### Prerequisites
+*   A local checkout of the main [EvalAI](https://github.com/Cloud-CV/EvalAI) repository.
+*   Docker and Docker Compose installed and running on your machine.
 
-### Quick Setup:
+---
 
-1. **Configure localhost in host_config.json:**
-   ```json
-   {
-       "token": "your_evalai_auth_token",
-       "team_pk": "your_team_primary_key",
-       "evalai_host_url": "http://localhost:8888"
-   }
-   ```
+### Step-by-Step Guide for Local Development
 
-2. **Set up self-hosted runner:**
-   - Go to your repository → Settings → Actions → Runners
-   - Click "New self-hosted runner"
-   - Follow the setup instructions for your OS
-   - Start your EvalAI server: `python manage.py runserver 0.0.0.0:8888`
+#### Step 1: Run the Local EvalAI Server
 
-3. **Test your setup:**
-   ```bash
-   python3 github/test_local_setup.py
-   ```
+First, start your local instance of EvalAI using Docker Compose. The API server, which the workflow communicates with, will be available on port `8000`.
 
-4. **Push to challenge branch:**
-   The workflow will automatically detect localhost and use your self-hosted runner!
+1.  Navigate to your local `EvalAI` directory.
+2.  Run the server. The `--build` flag is only needed the first time or after code changes.
+    ```bash
+    docker-compose up --build
+    ```
 
-### For detailed setup instructions:
-📚 See [Self-Hosted Runner Setup Guide](./github/self_hosted_runner_setup.md)
+**Note:** The command `docker-compose up` starts both the backend on port `8000` and the frontend on port `8888`. Our setup script specifically needs to talk to the backend API.
 
-### Troubleshooting:
-- **Connection refused**: Make sure your EvalAI server is running and accessible
-- **Wrong runner used**: Verify `host_config.json` contains localhost URL
-- **Permission errors**: Check runner has appropriate file system access
+#### Step 2: Set Up the Self-Hosted Runner
 
-## CI/CD Pipeline Overview
+A self-hosted runner is a small application you run on your machine that listens for jobs from your GitHub repository.
 
-This repository ships with a single GitHub Actions workflow – `.github/workflows/validate-and-process.yml`.  Whenever you **push to the `challenge` branch** the following happens:
+1.  In your challenge repository on GitHub, navigate to **Settings > Actions > Runners**.
+2.  Click **"New self-hosted runner"** and follow the on-screen instructions.
+3.  For detailed guidance, refer to the setup guide: **[Self-Hosted Runner Setup Guide](./github/self_hosted_runner_setup.md)**.
 
-1. **validate-host-config** (always on GitHub-hosted runner)
-    • Checks `github/host_config.json` for required fields (`token`, `team_pk`, `evalai_host_url`).
-    • Detects whether the URL is localhost and marks the build as requiring a self-hosted runner when needed.
+Once configured and running, the runner will show as "Idle" in your GitHub settings.
 
-2. **check-self-hosted-requirements** (only when localhost detected)
-    • Prints a quick checklist so you don't forget to start your EvalAI docker-compose setup or runner service.
-    • Does **not** fail the build – it's purely informational.
+#### Step 3: Configure `host_config.json` for Localhost
 
-3. **process-evalai-challenge**
-    • Runs on **GitHub-hosted** runner for remote URLs, **self-hosted** runner for localhost URLs.
-    • Installs Python dependencies directly (GitHub-hosted) or inside a `python:3.9-slim` Docker container (self-hosted) to keep your host OS clean.
-    • Executes `github/challenge_processing_script.py` twice:
-      – First with `IS_VALIDATION=True` (quick dry-run to surface YAML / template errors).
-      – Then with `IS_VALIDATION=False` to actually create / update the challenge on EvalAI.
-    • If validation fails, the job ends early and posts a GitHub Issue summarising the errors.
+Update the configuration file to point to your local server.
 
-## Important Note
-`host_config.json` ships with placeholders like:
-- `<evalai_user_auth_token>`
-- `<host_team_pk>`
-- `<evalai_host_url>`
+1.  Open `github/host_config.json`.
+2.  Fill in your **local** EvalAI token and team ID.
+3.  Set `evalai_host_url` to point to your local API server on port `8000`.
+
+    ```json
+    {
+        "token": "<your_local_evalai_auth_token>",
+        "team_pk": "<your_local_team_pk>",
+        "evalai_host_url": "http://localhost:8000"
+    }
+    ```
+    *   **For macOS/Windows Docker Users:** If the runner has trouble connecting to `localhost`, use `http://host.docker.internal:8000` as the `evalai_host_url`. This special DNS name resolves to the host machine's IP from within a Docker container.
+
+#### Step 4: Create the `challenge` Branch
+
+
+With the server and runner active, create the `challenge` branch and create commits like you would when creating challenge using github.
+
+
+#### Step 5: Monitor the Workflow
+
+1.  Go to the **Actions** tab in your GitHub repository.
+2.  You will see the "Validate and Process EvalAI Challenge" workflow running.
+3.  Click on the workflow and observe the logs. You will see that the `process-evalai-challenge` job is running on your self-hosted runner and that it's using Docker to execute the scripts.
+
+If successful, your challenge will be created or updated on your local EvalAI instance. You can iterate quickly by simply pushing new changes.
+
+----
 
 Please replace them with real values before pushing changes to avoid build errors.
-
-**For localhost development**: Use `http://localhost:8000` , `http://127.0.0.1:8000` or `http://host.internal.docker:8000` as the `evalai_host_url` and ensure you have a self-hosted runner configured.
 
 ## Facing problems in creating a challenge?
 

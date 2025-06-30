@@ -117,22 +117,36 @@ For local EvalAI challenge development, this repository supports **self-hosted G
 - **Wrong runner used**: Verify `host_config.json` contains localhost URL
 - **Permission errors**: Check runner has appropriate file system access
 
-## Important Note
-`host_config.json` file includes default placeholders like:
+## CI/CD Pipeline Overview
 
+This repository ships with a single GitHub Actions workflow – `.github/workflows/validate-and-process.yml`.  Whenever you **push to the `challenge` branch** the following happens:
+
+1. **validate-host-config** (always on GitHub-hosted runner)
+    • Checks `github/host_config.json` for required fields (`token`, `team_pk`, `evalai_host_url`).
+    • Detects whether the URL is localhost and marks the build as requiring a self-hosted runner when needed.
+
+2. **check-self-hosted-requirements** (only when localhost detected)
+    • Prints a quick checklist so you don't forget to start your EvalAI docker-compose setup or runner service.
+    • Does **not** fail the build – it's purely informational.
+
+3. **process-evalai-challenge**
+    • Runs on **GitHub-hosted** runner for remote URLs, **self-hosted** runner for localhost URLs.
+    • Installs Python dependencies directly (GitHub-hosted) or inside a `python:3.9-slim` Docker container (self-hosted) to keep your host OS clean.
+    • Executes `github/challenge_processing_script.py` twice:
+      – First with `IS_VALIDATION=True` (quick dry-run to surface YAML / template errors).
+      – Then with `IS_VALIDATION=False` to actually create / update the challenge on EvalAI.
+    • If validation fails, the job ends early and posts a GitHub Issue summarising the errors.
+
+## Important Note
+`host_config.json` ships with placeholders like:
 - `<evalai_user_auth_token>`
 - `<host_team_pk>`
 - `<evalai_host_url>`
 
 Please replace them with real values before pushing changes to avoid build errors.
 
-**For localhost development**: Use `http://localhost:8888` or `http://127.0.0.1:8888` as the `evalai_host_url` and ensure you have a self-hosted runner configured.
+**For localhost development**: Use `http://localhost:8000` , `http://127.0.0.1:8000` or `http://host.internal.docker:8000` as the `evalai_host_url` and ensure you have a self-hosted runner configured.
 
 ## Facing problems in creating a challenge?
 
 Please feel free to open issues on our [GitHub Repository](https://github.com/Cloud-CV/EvalAI-Starter/issues) or contact us at team@cloudcv.org if you have issues.
-
-For **self-hosted runner issues**, include:
-- Runner logs from `_diag` folder
-- Output from `python3 github/test_local_setup.py`
-- Your `host_config.json` configuration (without sensitive tokens)

@@ -21,12 +21,7 @@ from utils import (
 
 sys.dont_write_bytecode = True
 
-# -----------------------------------------------------------------------------
-# Environment variables provided by the workflow
-# -----------------------------------------------------------------------------
-
 GITHUB_CONTEXT = json.loads(os.getenv("GITHUB_CONTEXT", "{}"))
-
 GITHUB_AUTH_TOKEN = os.getenv("GITHUB_AUTH_TOKEN")
 if not GITHUB_AUTH_TOKEN:
     print(
@@ -36,7 +31,6 @@ if not GITHUB_AUTH_TOKEN:
 
 # Clean up the GitHub token (remove any whitespace/newlines)
 GITHUB_AUTH_TOKEN = GITHUB_AUTH_TOKEN.strip()
-
 HOST_AUTH_TOKEN = None
 CHALLENGE_HOST_TEAM_PK = None
 EVALAI_HOST_URL = None

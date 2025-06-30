@@ -76,62 +76,50 @@ In order to test the evaluation script locally before uploading it to [EvalAI](h
 
 ## Local Development with a Self-Hosted Runner
 
-For local server development, you can run the EvalAI server on your local machine and test your challenge configuration before deploying it publicly. This requires a **self-hosted GitHub Actions runner** to bridge the gap between GitHub and your local computer.
+> Use this when you want to test everything against a **local EvalAI server** before pushing to the real site.
 
-#### Prerequisites
-*   A local checkout of the main [EvalAI](https://github.com/Cloud-CV/EvalAI) repository.
-*   Docker and Docker Compose installed and running on your machine.
+1. **Spin up EvalAI locally**
+
+   ```bash
+   cd <path-to-EvalAI>
+   docker-compose up --build   # --build only the first time or after code changes
+   ```
+
+   *Backend API → `http://localhost:8000`, Frontend → `http://localhost:8888`.*
+
+2. **Register a self-hosted runner**
+
+   1. Repo → *Settings ▸ Actions ▸ Runners ▸ New self-hosted runner*.
+   2. Download, `./config.sh --url <repo-URL> --token <runner-token>`, then `./run.sh`.
+   3. If you want to reconfigure a pre-existing runner for a new repository :
+      **Detach or reuse the runner:**
+      ```bash
+      ./config.sh remove --token <runner-token>   # unregister
+      ./config.sh --url <new-repo> --token <runner-token>  # attach elsewhere
+      ```
+      OR 
+      1. Go to *Runners ▸ open menu ▸ Remove runner* , then paste the command shown in your local terminal to detach.
+      2. Then follow steps 1 and 2 for configuring runner for new repository.
+
+3. **Point `host_config.json` to localhost**
+
+   ```jsonc
+   {
+     "token": "<your_local_evalai_auth_token>",
+     "team_pk": "<your_local_team_pk>",
+     "evalai_host_url": "http://localhost:8000"
+   }
+   ```
+
+   *If the runner can’t resolve `localhost`, use `http://host.docker.internal:8000`.*
+
+4. **Create (or switch to) the `challenge` branch locally**
+   Commit your config / template / script changes here , as you would when creating a challenge using Github.
+
+5. **Verify the result**
+   Go to [Hosted Challenges](http://127.0.0.1:8888/web/hosted-challenges) on your local server and confirm your challenge appears and renders correctly.
 
 ---
-
-### Step-by-Step Guide for Local Development
-
-#### Step 1: Run the Local EvalAI Server
-
-First, start your local instance of EvalAI using Docker Compose. The API server, which the workflow communicates with, will be available on port `8000`.
-
-1.  Navigate to your local `EvalAI` directory.
-2.  Run the server. The `--build` flag is only needed the first time or after code changes.
-    ```bash
-    docker-compose up --build
-    ```
-
-**Note:** The command `docker-compose up` starts both the backend on port `8000` and the frontend on port `8888`. Our setup script specifically needs to talk to the backend API.
-
-#### Step 2: Set Up the Self-Hosted Runner
-
-A self-hosted runner is a small application you run on your machine that listens for jobs from your GitHub repository.
-
-1.  In your challenge repository on GitHub, navigate to **Settings > Actions > Runners**.
-2.  Click **"New self-hosted runner"** and follow the instructions.
-3.  Once configured and running, the runner will show as "Idle" in your GitHub settings.
-
-#### Step 3: Configure `host_config.json` for Localhost
-
-Update the configuration file to point to your local server.
-
-1.  Open `github/host_config.json`.
-2.  Fill in your **local** EvalAI token and team ID.
-3.  Set `evalai_host_url` to point to your local API server on port `8000`.
-
-    ```json
-    {
-        "token": "<your_local_evalai_auth_token>",
-        "team_pk": "<your_local_team_pk>",
-        "evalai_host_url": "http://localhost:8000"
-    }
-    ```
-    * **NOTE** : If the runner has trouble connecting to `localhost`, use `http://host.docker.internal:8000` as the `evalai_host_url`. This special DNS name resolves to the host machine's IP from within a Docker container.
-
-#### Step 4: Create the `challenge` Branch
-
-
-With the server and runner active, create the `challenge` branch and create commits like you would when creating challenge using github.
-
-
-If successful, upon merging your challenge will be created or updated on your local EvalAI instance in the [Hosted Challenges](http://127.0.0.1:8888/web/hosted-challenges) section on your local server.
-
-----
 ## Important Note
 `host_config.json` file includes default placeholders like:
 

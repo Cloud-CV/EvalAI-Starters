@@ -123,13 +123,10 @@ jobs:
               echo "✅ Found $ACTIVE_SELF_HOSTED active self-hosted runner(s)"
             fi
           else
-            echo "⚠️  Cannot access runners API (insufficient permissions or API error)"
-            echo "🐛 Debug: API Response:"
-            echo "$RUNNERS_JSON"
-            echo ""
-            echo "💡 Continuing without runner verification..."
-            echo "   If you don't have a self-hosted runner, the next job will fail"
-            echo "   Make sure GITHUB_TOKEN has 'repo' or 'actions:read' permissions"
+            echo "❌ Unable to verify self-hosted runners (API error or insufficient permissions)"
+            echo "🐛 Debug: API Response: $RUNNERS_JSON"
+            echo "💡 Ensure the token used has 'actions:read' scope and try again."
+            exit 1
           fi
           
           # Check 2: Test Docker availability (using a self-hosted runner briefly)

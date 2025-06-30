@@ -97,32 +97,43 @@ jobs:
           echo "🏠 LOCAL DEVELOPMENT MODE DETECTED"
           echo "=================================="
           echo ""
-          echo "📋 To proceed with local challenge creation, ensure you have:"
+          # Check 1: Verify at least one self-hosted runner is online
+          echo "🔍 Checking for active self-hosted runners..."
+          RUNNERS_JSON=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/runners")
+          
+          ACTIVE_SELF_HOSTED=$(echo "$RUNNERS_JSON" | jq -r '.runners[] | select(.status == "online" and .labels[].name == "self-hosted") | .name' | wc -l)
+          
+          if [ "$ACTIVE_SELF_HOSTED" -eq 0 ]; then
+            echo "❌ No active self-hosted runners found"
+            echo "💡 Setup instructions:"
+            echo "   1. Go to: https://github.com/${{ github.repository }}/settings/actions/runners"
+            echo "   2. Click 'New self-hosted runner'"
+            echo "   3. Follow setup instructions for your OS"
+            echo "   4. Start the runner service"
+            exit 1
+          else
+            echo "✅ Found $ACTIVE_SELF_HOSTED active self-hosted runner(s)"
+          fi
+          
+          # Check 2: Test Docker availability (using a self-hosted runner briefly)
           echo ""
-          echo "1️⃣  Self-hosted GitHub Actions runner configured:"
-          echo "   • Download runner from: https://github.com/${{ github.repository }}/settings/actions/runners"
-          echo "   • Install and configure on your local machine"
-          echo "   • Start the runner service"
+          echo "🐳 Testing Docker availability on self-hosted runner..."
+          
+          # We can't directly test Docker from GitHub-hosted runner, but we can check if Docker Hub is accessible
+          # The real Docker test will happen in the next job
+          if ! curl -s --connect-timeout 5 https://hub.docker.com > /dev/null; then
+            echo "⚠️  Warning: Cannot reach Docker Hub (network issue?)"
+            echo "   Docker pull commands may fail in the next job"
+          else
+            echo "✅ Docker Hub is accessible"
+          fi
+          
           echo ""
-          echo "2️⃣  Docker installed and running:"
-          echo "   • Docker Engine must be available on the runner machine"
-          echo "   • Will use 'docker run' commands with python:3.9-slim (architecture independent)"
-          echo "   • This solves compatibility issues with ARM64/macOS architectures"
-          echo "   • Note: GitHub Actions containers only work on Linux, so we use docker run instead"
-          echo ""
-          echo "3️⃣  EvalAI server running via Docker Compose:"
-          echo "   • Run: cd /path/to/evalai && docker-compose up --build"
-          echo "   • Server URL: ${{ needs.validate-host-config.outputs.host_url }}"
-          echo "   • Django API: localhost:8000, Node.js frontend: localhost:8888"
-          echo "   • Ensure it's accessible from Docker containers"
-          echo ""
-          echo "4️⃣  Network connectivity:"
-          echo "   • Docker container can reach your EvalAI server"
-          echo "   • No firewall blocking connections"
-          echo "   • Consider using host.docker.internal for macOS/Windows"
-          echo ""
-          echo "⚠️  This job will continue on your self-hosted runner with Docker..."
-          echo "⚠️  If you don't have a self-hosted runner with Docker, the next job will fail"
+          echo "📋 Next job will run on self-hosted runner and verify:"
+          echo "   • Docker engine is running"
+          echo "   • Can pull python:3.9-slim image"
+          echo "   • EvalAI server connectivity"
 
   process-evalai-challenge:
     needs: [validate-host-config, check-self-hosted-requirements]

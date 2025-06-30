@@ -127,9 +127,6 @@ jobs:
       (needs.check-self-hosted-requirements.result == 'success' || needs.check-self-hosted-requirements.result == 'skipped')
     runs-on: ${{ needs.validate-host-config.outputs.requires_self_hosted == 'true' && 'self-hosted' || 'ubuntu-latest' }}
     
-    # Note: GitHub Actions containers only work on Linux runners
-    # For macOS self-hosted runners, we'll use Docker run commands instead
-    
     steps:
       - name: Checkout challenge branch
         uses: actions/checkout@v3

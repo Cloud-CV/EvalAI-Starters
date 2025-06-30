@@ -168,7 +168,11 @@ if __name__ == "__main__":
         
         print(error_message)
         os.environ["CHALLENGE_ERRORS"] = error_message
-        
+
+        # Fail the job so CI visibly reports the problem
+        sys.exit(1)
+
+    except requests.exceptions.HTTPError as err:
         if response.status_code in EVALAI_ERROR_CODES:
             is_token_valid = validate_token(response.json())
             if is_token_valid:
@@ -185,7 +189,7 @@ if __name__ == "__main__":
                 )
             )
             os.environ["CHALLENGE_ERRORS"] = str(err)
-            
+
     except Exception as e:
         if VALIDATION_STEP == "True":
             error_message = "\nFollowing errors occurred while validating the challenge config: {}".format(
@@ -228,6 +232,9 @@ if __name__ == "__main__":
             else:
                 print("   This is expected when your local EvalAI server isn't running.")
                 
+            # Fail the job so CI visibly reports the problem
+            sys.exit(1)
+
         elif VALIDATION_STEP == "True" and check_if_pull_request():
             pr_number = GITHUB_CONTEXT.get("event", {}).get("number")
             if not pr_number:

@@ -103,10 +103,8 @@ First, start your local instance of EvalAI using Docker Compose. The API server,
 A self-hosted runner is a small application you run on your machine that listens for jobs from your GitHub repository.
 
 1.  In your challenge repository on GitHub, navigate to **Settings > Actions > Runners**.
-2.  Click **"New self-hosted runner"** and follow the on-screen instructions.
-3.  For detailed guidance, refer to the setup guide: **[Self-Hosted Runner Setup Guide](./github/self_hosted_runner_setup.md)**.
-
-Once configured and running, the runner will show as "Idle" in your GitHub settings.
+2.  Click **"New self-hosted runner"** and follow the instructions.
+3.  Once configured and running, the runner will show as "Idle" in your GitHub settings.
 
 #### Step 3: Configure `host_config.json` for Localhost
 
@@ -123,7 +121,7 @@ Update the configuration file to point to your local server.
         "evalai_host_url": "http://localhost:8000"
     }
     ```
-    *   **For macOS/Windows Docker Users:** If the runner has trouble connecting to `localhost`, use `http://host.docker.internal:8000` as the `evalai_host_url`. This special DNS name resolves to the host machine's IP from within a Docker container.
+    * **NOTE** : If the runner has trouble connecting to `localhost`, use `http://host.docker.internal:8000` as the `evalai_host_url`. This special DNS name resolves to the host machine's IP from within a Docker container.
 
 #### Step 4: Create the `challenge` Branch
 

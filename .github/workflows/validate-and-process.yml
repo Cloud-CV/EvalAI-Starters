@@ -124,8 +124,7 @@ jobs:
             fi
           else
             echo "❌ Unable to verify self-hosted runners (API error or insufficient permissions)"
-            echo "🐛 Debug: API Response: $RUNNERS_JSON"
-            echo "💡 Ensure the token used has 'actions:read' scope and try again."
+            echo " Please ensure the Runner is online and try again"
             exit 1
           fi
           

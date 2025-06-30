@@ -102,7 +102,12 @@ jobs:
           RUNNERS_JSON=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             "https://api.github.com/repos/${{ github.repository }}/actions/runners")
           
-          ACTIVE_SELF_HOSTED=$(echo "$RUNNERS_JSON" | jq -r '.runners[] | select(.status == "online" and .labels[].name == "self-hosted") | .name' | wc -l)
+          # Debug: Show what we got from the API
+          echo "🐛 Debug: API Response:"
+          echo "$RUNNERS_JSON" | jq -r '.runners[] | {name: .name, status: .status, labels: [.labels[].name]}'
+          
+          # Fixed filter: Check for self-hosted runners that are online
+          ACTIVE_SELF_HOSTED=$(echo "$RUNNERS_JSON" | jq -r '.runners[] | select(.status == "online" and (.labels[] | .name == "self-hosted")) | .name' | wc -l)
           
           if [ "$ACTIVE_SELF_HOSTED" -eq 0 ]; then
             echo "❌ No active self-hosted runners found"

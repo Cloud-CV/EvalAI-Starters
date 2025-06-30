@@ -90,14 +90,8 @@ In order to test the evaluation script locally before uploading it to [EvalAI](h
 2. **Register a self-hosted runner**
 
    1. Repo → *Settings ▸ Actions ▸ Runners ▸ New self-hosted runner*.
-   2. Download, `./config.sh --url <repo-URL> --token <runner-token>`, then `./run.sh`.
+   2. Select your architecture and paste the commands shown to install packages and configure your runners for your local machine
    3. If you want to reconfigure a pre-existing runner for a new repository :
-      **Detach or reuse the runner:**
-      ```bash
-      ./config.sh remove --token <runner-token>   # unregister
-      ./config.sh --url <new-repo> --token <runner-token>  # attach elsewhere
-      ```
-      OR 
       1. Go to *Runners ▸ open menu ▸ Remove runner* , then paste the command shown in your local terminal to detach.
       2. Then follow steps 1 and 2 for configuring runner for new repository.
 

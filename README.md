@@ -129,15 +129,15 @@ Update the configuration file to point to your local server.
 With the server and runner active, create the `challenge` branch and create commits like you would when creating challenge using github.
 
 
-#### Step 5: Monitor the Workflow
-
-1.  Go to the **Actions** tab in your GitHub repository.
-2.  You will see the "Validate and Process EvalAI Challenge" workflow running.
-3.  Click on the workflow and observe the logs. You will see that the `process-evalai-challenge` job is running on your self-hosted runner and that it's using Docker to execute the scripts.
-
-If successful, your challenge will be created or updated on your local EvalAI instance. You can iterate quickly by simply pushing new changes.
+If successful, upon merging your challenge will be created or updated on your local EvalAI instance in the [Hosted Challenges](http://127.0.0.1:8888/web/hosted-challenges) section on your local server.
 
 ----
+## Important Note
+`host_config.json` file includes default placeholders like:
+
+- `<evalai_user_auth_token>`
+- `<host_team_pk>`
+- `<evalai_host_url>`
 
 Please replace them with real values before pushing changes to avoid build errors.
 

@@ -250,12 +250,11 @@ jobs:
             "
 
       - name: Create or update challenge (GitHub-hosted)
-        if: success() && needs.validate-host-config.outputs.requires_self_hosted != 'true'
+        if: github.event_name == 'push' && success() && needs.validate-host-config.outputs.requires_self_hosted != 'true'
         run: |
           echo "🚀 CREATING/UPDATING CHALLENGE"
           echo "=============================="
           python3 github/challenge_processing_script.py ${GITHUB_REF#refs/heads/}
-        if: ${{ github.event_name == 'push' && success() }}
         env:
           IS_VALIDATION: 'False'
           GITHUB_CONTEXT: ${{ toJson(github) }}

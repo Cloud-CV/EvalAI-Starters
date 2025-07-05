@@ -1,15 +1,56 @@
 name: Validate and Process EvalAI Challenge
 
 on:
-  push:
+  push: {}
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
     branches:
-      - challenge
+      - 'challenge'
 
 permissions:
   contents: read
   issues: write
 
 jobs:
+  detect-and-validate-challenge-branch:
+    runs-on: ubuntu-latest
+    outputs:
+      is_challenge_branch: ${{ steps.branch-check.outputs.is_challenge_branch }}
+      challenge_branch: ${{ steps.branch-check.outputs.challenge_branch }}
+    steps:
+      - name: Detect and validate challenge branch
+        id: branch-check
+        run: |
+          # Get the actual branch name
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            BRANCH="${{ github.head_ref }}"
+          else
+            BRANCH="${{ github.ref_name }}"
+          fi
+          
+          echo "🔍 Analyzing branch: $BRANCH"
+          echo "challenge_branch=$BRANCH" >> $GITHUB_OUTPUT
+          
+          # Check if this is a challenge branch
+          if [[ "$BRANCH" =~ ^challenge(-.*)?$ ]]; then
+            echo "is_challenge_branch=true" >> $GITHUB_OUTPUT
+            echo "✅ Valid challenge branch detected: $BRANCH"
+            
+            # Extract branch suffix for versioning
+            if [[ "$BRANCH" =~ ^challenge-(.+)$ ]]; then
+              SUFFIX="${BASH_REMATCH[1]}"
+              echo "branch_suffix=$SUFFIX" >> $GITHUB_OUTPUT
+              echo "📋 Branch suffix: $SUFFIX"
+            else
+              echo "branch_suffix=main" >> $GITHUB_OUTPUT
+              echo "📋 Main challenge branch (no suffix)"
+            fi
+          else
+            echo "is_challenge_branch=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ Not a challenge branch: $BRANCH"
+            echo "⏭️ Challenge processing will be skipped"
+          fi
+
   validate-host-config:
     runs-on: ubuntu-latest
     outputs:
@@ -131,7 +172,7 @@ jobs:
       - name: Checkout challenge branch
         uses: actions/checkout@v3
         with:
-          ref: challenge
+          ref: ${{ github.ref_name }}
 
       - name: Set up Python (GitHub-hosted only)
         if: needs.validate-host-config.outputs.requires_self_hosted != 'true'
@@ -183,7 +224,7 @@ jobs:
         run: |
           echo "🔍 VALIDATING CHALLENGE CONFIGURATION"
           echo "====================================="
-          python3 github/challenge_processing_script.py
+          python3 github/challenge_processing_script.py ${GITHUB_REF#refs/heads/}
         env:
           IS_VALIDATION: 'True'
           GITHUB_CONTEXT: ${{ toJson(github) }}
@@ -209,11 +250,11 @@ jobs:
             "
 
       - name: Create or update challenge (GitHub-hosted)
-        if: success() && needs.validate-host-config.outputs.requires_self_hosted != 'true'
+        if: github.event_name == 'push' && success() && needs.validate-host-config.outputs.requires_self_hosted != 'true'
         run: |
           echo "🚀 CREATING/UPDATING CHALLENGE"
           echo "=============================="
-          python3 github/challenge_processing_script.py
+          python3 github/challenge_processing_script.py ${GITHUB_REF#refs/heads/}
         env:
           IS_VALIDATION: 'False'
           GITHUB_CONTEXT: ${{ toJson(github) }}

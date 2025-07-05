@@ -74,6 +74,48 @@ In order to test the evaluation script locally before uploading it to [EvalAI](h
 
 3. Run the command `python -m worker.run` from the directory where `annotations/` `challenge_data/` and `worker/` directories are present. If the command runs successfully, then the evaluation script works locally and will work on the server as well.
 
+## Local Development with a Self-Hosted Runner
+
+> Use this when you want to test everything against a **local EvalAI server** before pushing to the real site.
+
+1. **Spin up EvalAI locally**
+
+   ```bash
+   cd <path-to-EvalAI>
+   docker-compose up --build   # --build only the first time or after code changes
+   ```
+
+   *Backend API → `http://localhost:8000`, Frontend → `http://localhost:8888`.*
+
+2. **Register a self-hosted runner**
+
+   1. Repo → *Settings ▸ Actions ▸ Runners ▸ New self-hosted runner*.
+   2. Select your architecture and paste the commands shown to install packages and configure your runners for your local machine
+   3. If you want to reconfigure a pre-existing runner for a new repository :
+      1. Go to *Runners ▸ open menu ▸ Remove runner* , then paste the command shown in your local terminal to detach.
+      2. Then follow steps 1 and 2 for configuring runner for new repository.
+
+3. **Point `host_config.json` to localhost**
+
+   ```jsonc
+   {
+     "token": "<your_local_evalai_auth_token>",
+     "team_pk": "<your_local_team_pk>",
+     "evalai_host_url": "http://host.docker.internal:8000"
+   }
+   ```
+   *host.docker.internal* : Docker's built-in hostname that points to the Docker host (your machine).
+   *8000* : Port where Backend API for the EvalAI server used to create challenges runs.
+
+
+
+5. **Create (or switch to) the `challenge` branch locally**
+   Commit your config / template / script changes here , as you would when creating a challenge using Github.
+
+6. **Verify the result**
+   Go to [Hosted Challenges](http://127.0.0.1:8888/web/hosted-challenges) on your local server and confirm your challenge appears and renders correctly.
+
+---
 ## Important Note
 `host_config.json` file includes default placeholders like:
 

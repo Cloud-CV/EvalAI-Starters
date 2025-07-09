@@ -243,10 +243,11 @@ jobs:
             -e GITHUB_CONTEXT='${{ toJson(github) }}' \
             -e GITHUB_REPOSITORY='${{ github.repository }}' \
             -e GITHUB_AUTH_TOKEN='${{ secrets.AUTH_TOKEN }}' \
+            -e GIT_BRANCH='${{ github.ref_name }}' \
             python:3.9-slim \
             bash -c "
               pip install -r github/requirements.txt && 
-              python3 github/challenge_processing_script.py
+              python3 github/challenge_processing_script.py \$GIT_BRANCH
             "
 
       - name: Create or update challenge (GitHub-hosted)
@@ -273,8 +274,9 @@ jobs:
             -e GITHUB_CONTEXT='${{ toJson(github) }}' \
             -e GITHUB_REPOSITORY='${{ github.repository }}' \
             -e GITHUB_AUTH_TOKEN='${{ secrets.AUTH_TOKEN }}' \
+            -e GIT_BRANCH='${{ github.ref_name }}' \
             python:3.9-slim \
             bash -c "
               pip install -r github/requirements.txt && 
-              python3 github/challenge_processing_script.py
+              python3 github/challenge_processing_script.py \$GIT_BRANCH
             "

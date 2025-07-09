@@ -31,16 +31,16 @@ jobs:
           echo "🔍 Analyzing branch: $BRANCH"
           echo "challenge_branch=$BRANCH" >> $GITHUB_OUTPUT
           
-          # Check if this is a challenge branch
-          if [[ "$BRANCH" =~ ^challenge(-.*)?$ ]]; then
+          # Check if this is a challenge branch (challenge or challenge-YYYY-version)
+          if [[ "$BRANCH" =~ ^challenge(-[0-9]{4}-.*)?$ ]]; then
             echo "is_challenge_branch=true" >> $GITHUB_OUTPUT
             echo "✅ Valid challenge branch detected: $BRANCH"
             
             # Extract branch suffix for versioning
-            if [[ "$BRANCH" =~ ^challenge-(.+)$ ]]; then
+            if [[ "$BRANCH" =~ ^challenge-([0-9]{4}-.+)$ ]]; then
               SUFFIX="${BASH_REMATCH[1]}"
               echo "branch_suffix=$SUFFIX" >> $GITHUB_OUTPUT
-              echo "📋 Branch suffix: $SUFFIX"
+              echo "📋 Branch version: $SUFFIX"
             else
               echo "branch_suffix=main" >> $GITHUB_OUTPUT
               echo "📋 Main challenge branch (no suffix)"
@@ -48,7 +48,7 @@ jobs:
           else
             echo "is_challenge_branch=false" >> $GITHUB_OUTPUT
             echo "ℹ️ Not a challenge branch: $BRANCH"
-            echo "⏭️ Challenge processing will be skipped"
+            echo "⏭️ Challenge processing will be skipped (valid patterns: 'challenge' or 'challenge-YYYY-version')"
           fi
 
   validate-host-config:

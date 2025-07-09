@@ -48,9 +48,9 @@ args = parser.parse_args()
 # Determine effective branch name (default to "challenge" if none provided)
 branch_name = args.branch_name if args.branch_name else "challenge"
 
-# Enforce branch naming convention
-if not re.match(r"^challenge(-.*)?$", branch_name):
-    print("Error: Branch name must start with 'challenge' (e.g., 'challenge', 'challenge-2024').")
+# Enforce branch naming convention: "challenge" or "challenge-YYYY-version"
+if not re.match(r"^challenge(-\d{4}-.*)?$", branch_name):
+    print("Error: Branch name must be 'challenge' or 'challenge-YYYY-version' (e.g., 'challenge', 'challenge-2024-v1', 'challenge-2025-final').")
     sys.exit(1)
 
 def is_localhost_url(url):
@@ -87,6 +87,80 @@ def configure_requests_for_localhost():
     # Disable SSL warnings for localhost development
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     print("INFO: SSL verification disabled for localhost development server")
+
+
+def modify_challenge_title_for_versioning(branch_suffix):
+    """
+    Modify the challenge title in challenge_config.yaml for all servers
+    to ensure different branch versions create separate challenges
+    
+    Arguments:
+        branch_suffix {str}: The branch suffix (e.g., "2025-v1")
+    """
+    import yaml
+    
+    config_file = "challenge_config.yaml"
+    
+    try:
+        # Read the current config
+        with open(config_file, 'r') as f:
+            config = yaml.safe_load(f)
+        
+        # Get the original title
+        original_title = config.get('title', 'Challenge')
+        
+        # Check if title already has version suffix to avoid double-adding
+        if f" ({branch_suffix})" not in original_title:
+            # Add version suffix to title
+            config['title'] = f"{original_title} ({branch_suffix})"
+            print(f"   📝 Updated title: {config['title']}")
+            
+            # Write back the modified config
+            with open(config_file, 'w') as f:
+                yaml.dump(config, f, default_flow_style=False, sort_keys=False)
+                
+            print(f"   ✅ Challenge config updated for localhost versioning")
+            return original_title  # Return original title for cleanup
+        else:
+            print(f"   ℹ️  Title already has version suffix: {original_title}")
+            return None
+            
+    except Exception as e:
+        print(f"   ⚠️  Warning: Could not modify challenge title: {e}")
+        print(f"   ℹ️  Continuing with original title...")
+        return None
+
+
+def restore_challenge_title_for_versioning(original_title):
+    """
+    Restore the original challenge title in challenge_config.yaml
+    
+    Arguments:
+        original_title {str}: The original title to restore
+    """
+    if not original_title:
+        return
+        
+    import yaml
+    
+    config_file = "challenge_config.yaml"
+    
+    try:
+        # Read the current config
+        with open(config_file, 'r') as f:
+            config = yaml.safe_load(f)
+        
+        # Restore original title
+        config['title'] = original_title
+        
+        # Write back the restored config
+        with open(config_file, 'w') as f:
+            yaml.dump(config, f, default_flow_style=False, sort_keys=False)
+            
+        print(f"   🔄 Restored original title: {original_title}")
+        
+    except Exception as e:
+        print(f"   ⚠️  Warning: Could not restore original title: {e}")
 
 
 if __name__ == "__main__":
@@ -133,17 +207,54 @@ if __name__ == "__main__":
     
     headers = get_request_header(HOST_AUTH_TOKEN)
 
+    # Add the branch name (if provided) so that EvalAI can distinguish between multiple
+    # versions of the challenge present in the same repository.
+    
+    # For branches with year-version format (e.g., challenge-2025-v1, challenge-2025-v2), 
+    # create separate challenges by modifying the repository identifier
+    effective_repo_name = GITHUB_REPOSITORY
+    original_title = None  # Track original title for cleanup
+    
+    if branch_name and branch_name != "challenge":
+        # Extract year-version suffix from branch name and append to repo name
+        # challenge-2025-v1 -> 2025-v1
+        branch_suffix = branch_name.replace("challenge-", "")
+        effective_repo_name = f"{GITHUB_REPOSITORY}-{branch_suffix}"
+        print(f"🔄 Creating separate challenge for branch: {branch_name}")
+        print(f"📋 Effective repository name: {effective_repo_name}")
+        
+        # CRITICAL: Modify the challenge title BEFORE creating the zip file
+        # This ensures the server reads the modified title from the zip
+        print(f"📝 Modifying challenge title for branch versioning")
+        original_title = modify_challenge_title_for_versioning(branch_suffix)
+
     # Creating the challenge zip file and storing in a dict to send to EvalAI
+    # IMPORTANT: This must happen AFTER title modification
     print(f"\n📦 Creating challenge configuration package...")
     create_challenge_zip_file(CHALLENGE_ZIP_FILE_PATH, IGNORE_DIRS, IGNORE_FILES)
     zip_file = open(CHALLENGE_ZIP_FILE_PATH, "rb")
     file = {"zip_configuration": zip_file}
-
-    # Add the branch name (if provided) so that EvalAI can distinguish between multiple
-    # versions of the challenge present in the same repository.
-    data = {"GITHUB_REPOSITORY": GITHUB_REPOSITORY}
+    
+    data = {"GITHUB_REPOSITORY": effective_repo_name}
     if branch_name:
         data["BRANCH_NAME"] = branch_name
+
+    # Debug output
+    print(f"🔍 Challenge identification:")
+    print(f"   Original repo: {GITHUB_REPOSITORY}")
+    print(f"   Effective repo: {effective_repo_name}")
+    print(f"   Branch name: {branch_name}")
+    print(f"   Data being sent: {data}")
+
+    # Verify challenge title in the config file
+    try:
+        import yaml
+        with open("challenge_config.yaml", 'r') as f:
+            config = yaml.safe_load(f)
+        current_title = config.get('title', 'Unknown')
+        print(f"   Current challenge title: {current_title}")
+    except Exception as e:
+        print(f"   ⚠️  Could not read current title: {e}")
 
     # Configure SSL verification based on whether we're using localhost
     verify_ssl = not is_localhost
@@ -151,12 +262,35 @@ if __name__ == "__main__":
 
     try:
         print(f"\n🌐 Sending request to EvalAI server...")
+        print(f"📤 Request details:")
+        print(f"   URL: {url}")
+        print(f"   Data: {data}")
+        print(f"   Headers: {headers}")
+        
         response = requests.post(url, data=data, headers=headers, files=file, verify=verify_ssl)
 
+        print(f"📥 Response received:")
+        print(f"   Status code: {response.status_code}")
+        print(f"   Status: {response.status_code == http.HTTPStatus.CREATED and 'CREATED' or response.status_code == http.HTTPStatus.OK and 'UPDATED' or 'OTHER'}")
+        
         if response.status_code != http.HTTPStatus.OK and response.status_code != http.HTTPStatus.CREATED:
+            print(f"   Response content: {response.text}")
             response.raise_for_status()
         else:
-            print("\n✅ Challenge processed successfully on EvalAI")
+            if response.status_code == http.HTTPStatus.CREATED:
+                print("\n✅ NEW Challenge CREATED successfully on EvalAI")
+            elif response.status_code == http.HTTPStatus.OK:
+                print("\n🔄 Existing Challenge UPDATED successfully on EvalAI")
+            
+            # Try to parse response for additional info
+            try:
+                response_data = response.json()
+                if 'title' in response_data:
+                    print(f"   Challenge title: {response_data['title']}")
+                if 'id' in response_data:
+                    print(f"   Challenge ID: {response_data['id']}")
+            except:
+                print("   (Could not parse response JSON)")
             
     except requests.exceptions.ConnectionError as conn_err:
         # Handle connection errors specifically for localhost
@@ -226,6 +360,11 @@ if __name__ == "__main__":
     zip_file.close()
     os.remove(zip_file.name)
 
+    # Cleanup: restore original title if it was modified for versioning
+    if original_title:
+        print(f"\n🧹 Cleaning up title modifications...")
+        restore_challenge_title_for_versioning(original_title)
+
     is_valid, errors = check_for_errors()
     if not is_valid:
         # Check if this is a localhost connection error - don't create GitHub issues for expected localhost failures
@@ -262,7 +401,7 @@ if __name__ == "__main__":
             else:
                 add_pull_request_comment(
                     GITHUB_AUTH_TOKEN,
-                    os.path.basename(GITHUB_REPOSITORY),
+                    os.path.basename(effective_repo_name),
                     pr_number,
                     errors,
                 )
@@ -270,7 +409,7 @@ if __name__ == "__main__":
             issue_title = (
                 "Following errors occurred while validating the challenge config:"
             )
-            repo_name = os.path.basename(GITHUB_REPOSITORY) if GITHUB_REPOSITORY else ""
+            repo_name = os.path.basename(effective_repo_name) if effective_repo_name else ""
             create_github_repository_issue(
                 GITHUB_AUTH_TOKEN,
                 repo_name,

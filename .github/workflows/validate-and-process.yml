@@ -262,7 +262,7 @@ jobs:
           GITHUB_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
 
       - name: Create or update challenge (Self-hosted with Docker)
-        if: success() && needs.validate-host-config.outputs.requires_self_hosted == 'true'
+        if: github.event_name == 'push' && success() && needs.validate-host-config.outputs.requires_self_hosted == 'true'
         run: |
           echo "🚀 CREATING/UPDATING CHALLENGE (Docker)"
           echo "========================================"

@@ -1,20 +1,20 @@
 # If you are not sure what all these fields mean, please refer our documentation here:
 # https://evalai.readthedocs.io/en/latest/configuration.html
-title: Random Number Generator Challenge
-short_description: Random number generation challenge for each submission
+title: Advanced Multi-Phase AI Challenge
+short_description: Multi-phase challenge with development and validation stages
 description: templates/description.html
 evaluation_details: templates/evaluation_details.html
 terms_and_conditions: templates/terms_and_conditions.html
 image: logo.jpg
 submission_guidelines: templates/submission_guidelines.html
-leaderboard_description: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras egestas a libero nec sagittis.
+leaderboard_description: This challenge features multiple phases with different evaluation criteria and submission limits.
 evaluation_script: evaluation_script.zip
 remote_evaluation: False
-start_date: 2019-01-01 00:00:00
-end_date: 2099-05-31 23:59:59
+start_date: 2024-01-01 00:00:00
+end_date: 2025-12-31 23:59:59
 published: True
 tags: 
-  - random-number-generation
+  - multi-phase-challenge
   - machine-learning
   - data-science
   - computer-vision
@@ -22,39 +22,51 @@ leaderboard:
   - id: 1
     schema:
       {
-        "labels": ["Metric1", "Metric2", "Metric3", "Total"],
-        "default_order_by": "Total",
+        "labels": ["Accuracy", "Precision", "Recall", "F1-Score", "AUC"],
+        "default_order_by": "F1-Score",
         "metadata": {
-          "Metric1": {
-            "sort_ascending": True,
-            "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+          "Accuracy": {
+            "sort_ascending": False,
+            "description": "Overall accuracy of the model predictions.",
           },
-          "Metric2": {
-            "sort_ascending": True,
-            "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+          "Precision": {
+            "sort_ascending": False,
+            "description": "Precision metric measuring positive prediction accuracy.",
+          },
+          "Recall": {
+            "sort_ascending": False,
+            "description": "Recall metric measuring sensitivity of the model.",
+          },
+          "F1-Score": {
+            "sort_ascending": False,
+            "description": "Harmonic mean of precision and recall.",
+          },
+          "AUC": {
+            "sort_ascending": False,
+            "description": "Area Under the ROC Curve metric.",
           }
         }
       }
 
 challenge_phases:
   - id: 1
-    name: Dev Phase
+    name: Development Phase
     description: templates/challenge_phase_1_description.html
-    leaderboard_public: False
+    leaderboard_public: True
     is_public: True
     challenge: 1
     is_active: True
-    max_concurrent_submissions_allowed: 3
+    max_concurrent_submissions_allowed: 5
     allowed_email_ids: []
     disable_logs: False
     is_submission_public: True
-    start_date: 2019-01-19 00:00:00
-    end_date: 2099-04-25 23:59:59
+    start_date: 2024-01-01 00:00:00
+    end_date: 2024-08-31 23:59:59
     test_annotation_file: annotations/test_annotations_devsplit.json
-    codename: dev
-    max_submissions_per_day: 5
-    max_submissions_per_month: 50
-    max_submissions: 50
+    codename: development
+    max_submissions_per_day: 20
+    max_submissions_per_month: 200
+    max_submissions: 500
     default_submission_meta_attributes:
       - name: method_name
         is_visible: True
@@ -65,27 +77,30 @@ challenge_phases:
       - name: publication_url
         is_visible: True
     submission_meta_attributes:
-      - name: TextAttribute
-        description: Sample
+      - name: Model Architecture
+        description: Brief description of your model architecture
         type: text
-        required: False
-      - name: SingleOptionAttribute
-        description: Sample
-        type: radio
-        options: ["A", "B", "C"]
-      - name: MultipleChoiceAttribute
-        description: Sample
-        type: checkbox
-        options: ["alpha", "beta", "gamma"]
-      - name: TrueFalseField
-        description: Sample
-        type: boolean
         required: True
+      - name: Pre-trained Model
+        description: Are you using a pre-trained model?
+        type: radio
+        options: ["Yes", "No"]
+        required: True
+      - name: Training Data
+        description: What training data did you use?
+        type: checkbox
+        options: ["ImageNet", "COCO", "Custom Dataset", "Synthetic Data", "Other"]
+        required: False
+      - name: Data Augmentation
+        description: Did you use data augmentation?
+        type: boolean
+        required: False
     is_restricted_to_select_one_submission: False
-    is_partial_submission_evaluation_enabled: False
-    allowed_submission_file_types: ".json, .zip, .txt, .tsv, .gz, .csv, .h5, .npy, .npz"
+    is_partial_submission_evaluation_enabled: True
+    allowed_submission_file_types: ".json, .zip, .txt, .tsv, .gz, .csv, .h5, .npy, .npz, .pkl"
+
   - id: 2
-    name: Test Phase
+    name: Validation Phase
     description: templates/challenge_phase_2_description.html
     leaderboard_public: True
     is_public: True
@@ -94,14 +109,14 @@ challenge_phases:
     max_concurrent_submissions_allowed: 3
     allowed_email_ids: []
     disable_logs: False
-    is_submission_public: True
-    start_date: 2019-01-01 00:00:00
-    end_date: 2099-05-24 23:59:59
+    is_submission_public: False
+    start_date: 2024-09-01 00:00:00
+    end_date: 2024-11-30 23:59:59
     test_annotation_file: annotations/test_annotations_testsplit.json
-    codename: test
-    max_submissions_per_day: 5
-    max_submissions_per_month: 50
-    max_submissions: 50
+    codename: validation
+    max_submissions_per_day: 10
+    max_submissions_per_month: 100
+    max_submissions: 200
     default_submission_meta_attributes:
       - name: method_name
         is_visible: True
@@ -109,56 +124,54 @@ challenge_phases:
         is_visible: True
       - name: project_url
         is_visible: True
-      - name: publication_url
-        is_visible: True
     submission_meta_attributes:
-      - name: TextAttribute
-        description: Sample
+      - name: Model Version
+        description: Version identifier for your model
         type: text
-      - name: SingleOptionAttribute
-        description: Sample
-        type: radio
-        options: ["A", "B", "C"]
-      - name: MultipleChoiceAttribute
-        description: Sample
+        required: True
+      - name: Computational Resources
+        description: What computational resources were used?
         type: checkbox
-        options: ["alpha", "beta", "gamma"]
-      - name: TrueFalseField
-        description: Sample
+        options: ["CPU", "Single GPU", "Multiple GPUs", "TPU", "Cloud Computing", "Other"]
+        required: True
+      - name: Training Time
+        description: Approximate training time
+        type: radio
+        options: ["< 1 hour", "1-6 hours", "6-24 hours", "1-7 days", "> 1 week"]
+        required: False
+      - name: Ensemble Method
+        description: Did you use ensemble methods?
         type: boolean
+        required: False
     is_restricted_to_select_one_submission: False
     is_partial_submission_evaluation_enabled: False
+    allowed_submission_file_types: ".json, .zip, .txt, .tsv, .gz, .csv, .h5, .npy, .npz"
 
 dataset_splits:
   - id: 1
-    name: Train Split
-    codename: train_split
+    name: Development Split
+    codename: dev_split
   - id: 2
     name: Test Split
     codename: test_split
 
 challenge_phase_splits:
+  # Development Phase - uses dev split with public leaderboard
   - challenge_phase_id: 1
     leaderboard_id: 1
     dataset_split_id: 1
     visibility: 1
-    leaderboard_decimal_precision: 2
+    leaderboard_decimal_precision: 4
     is_leaderboard_order_descending: True
     show_execution_time: True
     show_leaderboard_by_latest_submission: True
-  - challenge_phase_id: 2
-    leaderboard_id: 1
-    dataset_split_id: 1
-    visibility: 3
-    leaderboard_decimal_precision: 2
-    is_leaderboard_order_descending: True
-    showeceution_time: False
-    show_leaderboard_by_latest_submission: False
+
+  # Validation Phase - uses test split with public leaderboard
   - challenge_phase_id: 2
     leaderboard_id: 1
     dataset_split_id: 2
     visibility: 1
-    leaderboard_decimal_precision: 2
+    leaderboard_decimal_precision: 4
     is_leaderboard_order_descending: True
     show_execution_time: True
     show_leaderboard_by_latest_submission: True

@@ -9,7 +9,18 @@ import config
 import urllib3
 from urllib.parse import urlparse
 
-from config import *
+from config import (
+    HOST_CONFIG_FILE_PATH,
+    CHALLENGE_CONFIG_VALIDATION_URL,
+    CHALLENGE_CREATE_OR_UPDATE_URL,
+    EVALAI_ERROR_CODES,
+    API_HOST_URL,
+    IGNORE_DIRS,
+    IGNORE_FILES,
+    CHALLENGE_ZIP_FILE_PATH,
+    GITHUB_EVENT_NAME,
+    VALIDATION_STEP,
+)
 from utils import (
     add_pull_request_comment,
     check_for_errors,
@@ -26,6 +37,16 @@ sys.dont_write_bytecode = True
 
 GITHUB_CONTEXT = json.loads(os.getenv("GITHUB_CONTEXT", "{}"))
 GITHUB_AUTH_TOKEN = os.getenv("GITHUB_AUTH_TOKEN")
+
+# START of the FIX: Explicitly read GITHUB_REPOSITORY from environment variable
+GITHUB_REPOSITORY = os.getenv("GITHUB_REPOSITORY")
+if not GITHUB_REPOSITORY:
+    print("FATAL: GITHUB_REPOSITORY environment variable is not set.")
+    print("Please ensure your GitHub Actions workflow sets this variable.")
+    sys.exit(1)
+print(f"🔍 GITHUB_REPOSITORY from environment: {GITHUB_REPOSITORY}")
+# END of the FIX
+
 if not GITHUB_AUTH_TOKEN:
     print(
         "Please add your github access token to the repository secrets with the name AUTH_TOKEN"
@@ -91,11 +112,11 @@ def configure_requests_for_localhost():
 
 def modify_challenge_title_for_versioning(branch_suffix):
     """
-    Modify the challenge title in challenge_config.yaml for all servers
-    to ensure different branch versions create separate challenges
+    Keep the original challenge title in challenge_config.yaml
+    Different branch versions will create separate challenges through repository name modification
     
     Arguments:
-        branch_suffix {str}: The branch suffix (e.g., "2025-v1")
+        branch_suffix {str}: The branch suffix (e.g., "2025-v1") - not used for title modification
     """
     import yaml
     
@@ -109,58 +130,15 @@ def modify_challenge_title_for_versioning(branch_suffix):
         # Get the original title
         original_title = config.get('title', 'Challenge')
         
-        # Check if title already has version suffix to avoid double-adding
-        if f" ({branch_suffix})" not in original_title:
-            # Add version suffix to title
-            config['title'] = f"{original_title} ({branch_suffix})"
-            print(f"   📝 Updated title: {config['title']}")
-            
-            # Write back the modified config
-            with open(config_file, 'w') as f:
-                yaml.dump(config, f, default_flow_style=False, sort_keys=False)
-                
-            print(f"   ✅ Challenge config updated for localhost versioning")
-            return original_title  # Return original title for cleanup
-        else:
-            print(f"   ℹ️  Title already has version suffix: {original_title}")
-            return None
+        print(f"   📝 Keeping original title: {original_title}")
+        print(f"   ✅ Challenge versioning handled through repository name modification")
+        return None  # No title modification needed
             
     except Exception as e:
-        print(f"   ⚠️  Warning: Could not modify challenge title: {e}")
+        print(f"   ⚠️  Warning: Could not read challenge title: {e}")
         print(f"   ℹ️  Continuing with original title...")
         return None
 
-
-def restore_challenge_title_for_versioning(original_title):
-    """
-    Restore the original challenge title in challenge_config.yaml
-    
-    Arguments:
-        original_title {str}: The original title to restore
-    """
-    if not original_title:
-        return
-        
-    import yaml
-    
-    config_file = "challenge_config.yaml"
-    
-    try:
-        # Read the current config
-        with open(config_file, 'r') as f:
-            config = yaml.safe_load(f)
-        
-        # Restore original title
-        config['title'] = original_title
-        
-        # Write back the restored config
-        with open(config_file, 'w') as f:
-            yaml.dump(config, f, default_flow_style=False, sort_keys=False)
-            
-        print(f"   🔄 Restored original title: {original_title}")
-        
-    except Exception as e:
-        print(f"   ⚠️  Warning: Could not restore original title: {e}")
 
 
 if __name__ == "__main__":
@@ -175,7 +153,8 @@ if __name__ == "__main__":
 
     
     # Update the global config path for zip file creation
-    config.CHALLENGE_CONFIG_FILE_PATH = "challenge_config.yaml"
+    # Note: We're not importing config.* anymore, so we need to set this directly
+    CHALLENGE_CONFIG_FILE_PATH = "challenge_config.yaml"
     
     # Check if we're using a localhost server and configure accordingly
     is_localhost = is_localhost_url(EVALAI_HOST_URL)
@@ -213,7 +192,6 @@ if __name__ == "__main__":
     # For branches with year-version format (e.g., challenge-2025-v1, challenge-2025-v2), 
     # create separate challenges by modifying the repository identifier
     effective_repo_name = GITHUB_REPOSITORY
-    original_title = None  # Track original title for cleanup
     
     if branch_name and branch_name != "challenge":
         # Extract year-version suffix from branch name and append to repo name
@@ -223,10 +201,10 @@ if __name__ == "__main__":
         print(f"🔄 Creating separate challenge for branch: {branch_name}")
         print(f"📋 Effective repository name: {effective_repo_name}")
         
-        # CRITICAL: Modify the challenge title BEFORE creating the zip file
-        # This ensures the server reads the modified title from the zip
-        print(f"📝 Modifying challenge title for branch versioning")
-        original_title = modify_challenge_title_for_versioning(branch_suffix)
+        # Note: Challenge versioning is handled through repository name modification
+        # The title remains unchanged to keep it clean
+        print(f"📝 Challenge versioning handled through repository name")
+        modify_challenge_title_for_versioning(branch_suffix)
 
     # Creating the challenge zip file and storing in a dict to send to EvalAI
     # IMPORTANT: This must happen AFTER title modification
@@ -359,11 +337,6 @@ if __name__ == "__main__":
 
     zip_file.close()
     os.remove(zip_file.name)
-
-    # Cleanup: restore original title if it was modified for versioning
-    if original_title:
-        print(f"\n🧹 Cleaning up title modifications...")
-        restore_challenge_title_for_versioning(original_title)
 
     is_valid, errors = check_for_errors()
     if not is_valid:

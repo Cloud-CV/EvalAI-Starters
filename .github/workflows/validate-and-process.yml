@@ -3,13 +3,55 @@ name: Validate and Process EvalAI Challenge
 on:
   push:
     branches:
-      - challenge
+      - 'challenge'
+      - 'challenge-*-*'
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
 
 permissions:
   contents: read
   issues: write
 
 jobs:
+  detect-and-validate-challenge-branch:
+    runs-on: ubuntu-latest
+    outputs:
+      is_challenge_branch: ${{ steps.branch-check.outputs.is_challenge_branch }}
+      challenge_branch: ${{ steps.branch-check.outputs.challenge_branch }}
+    steps:
+      - name: Detect and validate challenge branch
+        id: branch-check
+        run: |
+          # Get the actual branch name
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            BRANCH="${{ github.head_ref }}"
+          else
+            BRANCH="${{ github.ref_name }}"
+          fi
+          
+          echo "🔍 Analyzing branch: $BRANCH"
+          echo "challenge_branch=$BRANCH" >> $GITHUB_OUTPUT
+          
+          # Check if this is a challenge branch (challenge or challenge-YYYY-version)
+          if [[ "$BRANCH" =~ ^challenge(-[0-9]{4}-.*)?$ ]]; then
+            echo "is_challenge_branch=true" >> $GITHUB_OUTPUT
+            echo "✅ Valid challenge branch detected: $BRANCH"
+            
+            # Extract branch suffix for versioning
+            if [[ "$BRANCH" =~ ^challenge-([0-9]{4}-.+)$ ]]; then
+              SUFFIX="${BASH_REMATCH[1]}"
+              echo "branch_suffix=$SUFFIX" >> $GITHUB_OUTPUT
+              echo "📋 Branch version: $SUFFIX"
+            else
+              echo "branch_suffix=main" >> $GITHUB_OUTPUT
+              echo "📋 Main challenge branch (no suffix)"
+            fi
+          else
+            echo "is_challenge_branch=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ Not a challenge branch: $BRANCH"
+            echo "⏭️ Challenge processing will be skipped (valid patterns: 'challenge' or 'challenge-YYYY-version')"
+          fi
+
   validate-host-config:
     runs-on: ubuntu-latest
     outputs:
@@ -120,9 +162,10 @@ jobs:
 
 
   process-evalai-challenge:
-    needs: [validate-host-config, check-self-hosted-requirements]
+    needs: [detect-and-validate-challenge-branch, validate-host-config, check-self-hosted-requirements]
     if: |
       always() && 
+      needs.detect-and-validate-challenge-branch.outputs.is_challenge_branch == 'true' &&
       needs.validate-host-config.outputs.is_valid == 'true' &&
       (needs.check-self-hosted-requirements.result == 'success' || needs.check-self-hosted-requirements.result == 'skipped')
     runs-on: ${{ needs.validate-host-config.outputs.requires_self_hosted == 'true' && 'self-hosted' || 'ubuntu-latest' }}
@@ -131,7 +174,7 @@ jobs:
       - name: Checkout challenge branch
         uses: actions/checkout@v3
         with:
-          ref: challenge
+          ref: ${{ needs.detect-and-validate-challenge-branch.outputs.challenge_branch }}
 
       - name: Set up Python (GitHub-hosted only)
         if: needs.validate-host-config.outputs.requires_self_hosted != 'true'
@@ -183,10 +226,11 @@ jobs:
         run: |
           echo "🔍 VALIDATING CHALLENGE CONFIGURATION"
           echo "====================================="
-          python3 github/challenge_processing_script.py
+          python3 github/challenge_processing_script.py ${{ needs.detect-and-validate-challenge-branch.outputs.challenge_branch }}
         env:
           IS_VALIDATION: 'True'
           GITHUB_CONTEXT: ${{ toJson(github) }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
 
       - name: Validate challenge configuration (Self-hosted with Docker)
@@ -202,25 +246,27 @@ jobs:
             -e GITHUB_CONTEXT='${{ toJson(github) }}' \
             -e GITHUB_REPOSITORY='${{ github.repository }}' \
             -e GITHUB_AUTH_TOKEN='${{ secrets.AUTH_TOKEN }}' \
+            -e GIT_BRANCH='${{ needs.detect-and-validate-challenge-branch.outputs.challenge_branch }}' \
             python:3.9-slim \
             bash -c "
               pip install -r github/requirements.txt && 
-              python3 github/challenge_processing_script.py
+              python3 github/challenge_processing_script.py \$GIT_BRANCH
             "
 
       - name: Create or update challenge (GitHub-hosted)
-        if: success() && needs.validate-host-config.outputs.requires_self_hosted != 'true'
+        if: github.event_name == 'push' && success() && needs.validate-host-config.outputs.requires_self_hosted != 'true'
         run: |
           echo "🚀 CREATING/UPDATING CHALLENGE"
           echo "=============================="
-          python3 github/challenge_processing_script.py
+          python3 github/challenge_processing_script.py ${{ needs.detect-and-validate-challenge-branch.outputs.challenge_branch }}
         env:
           IS_VALIDATION: 'False'
           GITHUB_CONTEXT: ${{ toJson(github) }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
 
       - name: Create or update challenge (Self-hosted with Docker)
-        if: success() && needs.validate-host-config.outputs.requires_self_hosted == 'true'
+        if: github.event_name == 'push' && success() && needs.validate-host-config.outputs.requires_self_hosted == 'true'
         run: |
           echo "🚀 CREATING/UPDATING CHALLENGE (Docker)"
           echo "========================================"
@@ -232,8 +278,9 @@ jobs:
             -e GITHUB_CONTEXT='${{ toJson(github) }}' \
             -e GITHUB_REPOSITORY='${{ github.repository }}' \
             -e GITHUB_AUTH_TOKEN='${{ secrets.AUTH_TOKEN }}' \
+            -e GIT_BRANCH='${{ needs.detect-and-validate-challenge-branch.outputs.challenge_branch }}' \
             python:3.9-slim \
             bash -c "
               pip install -r github/requirements.txt && 
-              python3 github/challenge_processing_script.py
+              python3 github/challenge_processing_script.py \$GIT_BRANCH
             "

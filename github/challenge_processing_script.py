@@ -3,10 +3,23 @@ import json
 import os
 import requests
 import sys
+import argparse
+import re
+import config
 import urllib3
 from urllib.parse import urlparse
 
-from config import *
+from config import (
+    HOST_CONFIG_FILE_PATH,
+    CHALLENGE_CONFIG_VALIDATION_URL,
+    CHALLENGE_CREATE_OR_UPDATE_URL,
+    EVALAI_ERROR_CODES,
+    API_HOST_URL,
+    IGNORE_DIRS,
+    IGNORE_FILES,
+    CHALLENGE_ZIP_FILE_PATH,
+    GITHUB_EVENT_NAME,
+)
 from utils import (
     add_pull_request_comment,
     check_for_errors,
@@ -23,6 +36,19 @@ sys.dont_write_bytecode = True
 
 GITHUB_CONTEXT = json.loads(os.getenv("GITHUB_CONTEXT", "{}"))
 GITHUB_AUTH_TOKEN = os.getenv("GITHUB_AUTH_TOKEN")
+
+# START of the FIX: Explicitly read GITHUB_REPOSITORY from environment variable
+GITHUB_REPOSITORY = os.getenv("GITHUB_REPOSITORY")
+if not GITHUB_REPOSITORY:
+    print("FATAL: GITHUB_REPOSITORY environment variable is not set.")
+    print("Please ensure your GitHub Actions workflow sets this variable.")
+    sys.exit(1)
+print(f"🔍 GITHUB_REPOSITORY from environment: {GITHUB_REPOSITORY}")
+
+VALIDATION_STEP = os.getenv("IS_VALIDATION")
+print(f"🔍 VALIDATION_STEP from IS_VALIDATION: {VALIDATION_STEP}")
+
+
 if not GITHUB_AUTH_TOKEN:
     print(
         "Please add your github access token to the repository secrets with the name AUTH_TOKEN"
@@ -35,6 +61,20 @@ HOST_AUTH_TOKEN = None
 CHALLENGE_HOST_TEAM_PK = None
 EVALAI_HOST_URL = None
 
+parser = argparse.ArgumentParser(
+    description="Validate or create/update challenge on EvalAI"
+)
+parser.add_argument("branch_name", nargs="?", default=None, help="Name of the git branch whose configuration is being processed")
+
+args = parser.parse_args()
+
+# Determine effective branch name (default to "challenge" if none provided)
+branch_name = args.branch_name if args.branch_name else "challenge"
+
+# Enforce branch naming convention: "challenge" or "challenge-YYYY-version"
+if not re.match(r"^challenge(-\d{4}-.*)?$", branch_name):
+    print("Error: Branch name must be 'challenge' or 'challenge-YYYY-version' (e.g., 'challenge', 'challenge-2024-v1', 'challenge-2025-final').")
+    sys.exit(1)
 
 def is_localhost_url(url):
     """
@@ -72,6 +112,37 @@ def configure_requests_for_localhost():
     print("INFO: SSL verification disabled for localhost development server")
 
 
+def modify_challenge_title_for_versioning(branch_suffix):
+    """
+    Keep the original challenge title in challenge_config.yaml
+    Different branch versions will create separate challenges through repository name modification
+    
+    Arguments:
+        branch_suffix {str}: The branch suffix (e.g., "2025-v1") - not used for title modification
+    """
+    import yaml
+    
+    config_file = "challenge_config.yaml"
+    
+    try:
+        # Read the current config
+        with open(config_file, 'r') as f:
+            config = yaml.safe_load(f)
+        
+        # Get the original title
+        original_title = config.get('title', 'Challenge')
+        
+        print(f"   📝 Keeping original title: {original_title}")
+        print(f"   ✅ Challenge versioning handled through repository name modification")
+        return None  # No title modification needed
+            
+    except Exception as e:
+        print(f"   ⚠️  Warning: Could not read challenge title: {e}")
+        print(f"   ℹ️  Continuing with original title...")
+        return None
+
+
+
 if __name__ == "__main__":
     
     configs = load_host_configs(HOST_CONFIG_FILE_PATH)
@@ -82,6 +153,11 @@ if __name__ == "__main__":
     else:
         sys.exit(1)
 
+    
+    # Update the global config path for zip file creation
+    # Note: We're not importing config.* anymore, so we need to set this directly
+    CHALLENGE_CONFIG_FILE_PATH = "challenge_config.yaml"
+    
     # Check if we're using a localhost server and configure accordingly
     is_localhost = is_localhost_url(EVALAI_HOST_URL)
     runner_info = get_runner_info()
@@ -112,13 +188,53 @@ if __name__ == "__main__":
     
     headers = get_request_header(HOST_AUTH_TOKEN)
 
+    # Add the branch name (if provided) so that EvalAI can distinguish between multiple
+    # versions of the challenge present in the same repository.
+    
+    # For branches with year-version format (e.g., challenge-2025-v1, challenge-2025-v2), 
+    # create separate challenges by modifying the repository identifier
+    effective_repo_name = GITHUB_REPOSITORY
+    
+    if branch_name and branch_name != "challenge":
+        # Extract year-version suffix from branch name and append to repo name
+        # challenge-2025-v1 -> 2025-v1
+        branch_suffix = branch_name.replace("challenge-", "")
+        effective_repo_name = f"{GITHUB_REPOSITORY}-{branch_suffix}"
+        print(f"🔄 Creating separate challenge for branch: {branch_name}")
+        print(f"📋 Effective repository name: {effective_repo_name}")
+        
+        # Note: Challenge versioning is handled through repository name modification
+        # The title remains unchanged to keep it clean
+        print(f"📝 Challenge versioning handled through repository name")
+        modify_challenge_title_for_versioning(branch_suffix)
+
     # Creating the challenge zip file and storing in a dict to send to EvalAI
+    # IMPORTANT: This must happen AFTER title modification
     print(f"\n📦 Creating challenge configuration package...")
     create_challenge_zip_file(CHALLENGE_ZIP_FILE_PATH, IGNORE_DIRS, IGNORE_FILES)
     zip_file = open(CHALLENGE_ZIP_FILE_PATH, "rb")
     file = {"zip_configuration": zip_file}
+    
+    data = {"GITHUB_REPOSITORY": effective_repo_name}
+    if branch_name:
+        data["BRANCH_NAME"] = branch_name
 
-    data = {"GITHUB_REPOSITORY": GITHUB_REPOSITORY}
+    # Debug output
+    print(f"🔍 Challenge identification:")
+    print(f"   Original repo: {GITHUB_REPOSITORY}")
+    print(f"   Effective repo: {effective_repo_name}")
+    print(f"   Branch name: {branch_name}")
+    print(f"   Data being sent: {data}")
+
+    # Verify challenge title in the config file
+    try:
+        import yaml
+        with open("challenge_config.yaml", 'r') as f:
+            config = yaml.safe_load(f)
+        current_title = config.get('title', 'Unknown')
+        print(f"   Current challenge title: {current_title}")
+    except Exception as e:
+        print(f"   ⚠️  Could not read current title: {e}")
 
     # Configure SSL verification based on whether we're using localhost
     verify_ssl = not is_localhost
@@ -126,12 +242,35 @@ if __name__ == "__main__":
 
     try:
         print(f"\n🌐 Sending request to EvalAI server...")
+        print(f"📤 Request details:")
+        print(f"   URL: {url}")
+        print(f"   Data: {data}")
+        print(f"   Headers: {headers}")
+        
         response = requests.post(url, data=data, headers=headers, files=file, verify=verify_ssl)
 
+        print(f"📥 Response received:")
+        print(f"   Status code: {response.status_code}")
+        print(f"   Status: {response.status_code == http.HTTPStatus.CREATED and 'CREATED' or response.status_code == http.HTTPStatus.OK and 'UPDATED' or 'OTHER'}")
+        
         if response.status_code != http.HTTPStatus.OK and response.status_code != http.HTTPStatus.CREATED:
+            print(f"   Response content: {response.text}")
             response.raise_for_status()
         else:
-            print("\n✅ Challenge processed successfully on EvalAI")
+            if response.status_code == http.HTTPStatus.CREATED:
+                print("\n✅ NEW Challenge CREATED successfully on EvalAI")
+            elif response.status_code == http.HTTPStatus.OK:
+                print("\n🔄 Existing Challenge UPDATED successfully on EvalAI")
+            
+            # Try to parse response for additional info
+            try:
+                response_data = response.json()
+                if 'title' in response_data:
+                    print(f"   Challenge title: {response_data['title']}")
+                if 'id' in response_data:
+                    print(f"   Challenge ID: {response_data['id']}")
+            except:
+                print("   (Could not parse response JSON)")
             
     except requests.exceptions.ConnectionError as conn_err:
         # Handle connection errors specifically for localhost
@@ -237,7 +376,7 @@ if __name__ == "__main__":
             else:
                 add_pull_request_comment(
                     GITHUB_AUTH_TOKEN,
-                    os.path.basename(GITHUB_REPOSITORY),
+                    os.path.basename(effective_repo_name),
                     pr_number,
                     errors,
                 )
@@ -245,7 +384,7 @@ if __name__ == "__main__":
             issue_title = (
                 "Following errors occurred while validating the challenge config:"
             )
-            repo_name = os.path.basename(GITHUB_REPOSITORY) if GITHUB_REPOSITORY else ""
+            repo_name = os.path.basename(effective_repo_name) if effective_repo_name else ""
             create_github_repository_issue(
                 GITHUB_AUTH_TOKEN,
                 repo_name,

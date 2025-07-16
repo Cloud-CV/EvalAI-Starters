@@ -1,11 +1,12 @@
 name: Validate and Process EvalAI Challenge
 
 on:
-  push: {}
-  pull_request:
-    types: [opened, synchronize, reopened, edited]
+  push:
     branches:
       - 'challenge'
+      - 'challenge-*-*'
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
 
 permissions:
   contents: read
@@ -161,7 +162,7 @@ jobs:
 
 
   process-evalai-challenge:
-    needs: [validate-host-config, check-self-hosted-requirements]
+    needs: [detect-and-validate-challenge-branch, validate-host-config, check-self-hosted-requirements]
     if: |
       always() && 
       needs.validate-host-config.outputs.is_valid == 'true' &&
@@ -172,7 +173,7 @@ jobs:
       - name: Checkout challenge branch
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ needs.detect-and-validate-challenge-branch.outputs.challenge_branch }}
 
       - name: Set up Python (GitHub-hosted only)
         if: needs.validate-host-config.outputs.requires_self_hosted != 'true'
@@ -224,7 +225,7 @@ jobs:
         run: |
           echo "🔍 VALIDATING CHALLENGE CONFIGURATION"
           echo "====================================="
-          python3 github/challenge_processing_script.py ${GITHUB_REF#refs/heads/}
+          python3 github/challenge_processing_script.py ${{ needs.detect-and-validate-challenge-branch.outputs.challenge_branch }}
         env:
           IS_VALIDATION: 'True'
           GITHUB_CONTEXT: ${{ toJson(github) }}
@@ -243,7 +244,7 @@ jobs:
             -e GITHUB_CONTEXT='${{ toJson(github) }}' \
             -e GITHUB_REPOSITORY='${{ github.repository }}' \
             -e GITHUB_AUTH_TOKEN='${{ secrets.AUTH_TOKEN }}' \
-            -e GIT_BRANCH='${{ github.ref_name }}' \
+            -e GIT_BRANCH='${{ needs.detect-and-validate-challenge-branch.outputs.challenge_branch }}' \
             python:3.9-slim \
             bash -c "
               pip install -r github/requirements.txt && 
@@ -255,7 +256,7 @@ jobs:
         run: |
           echo "🚀 CREATING/UPDATING CHALLENGE"
           echo "=============================="
-          python3 github/challenge_processing_script.py ${GITHUB_REF#refs/heads/}
+          python3 github/challenge_processing_script.py ${{ needs.detect-and-validate-challenge-branch.outputs.challenge_branch }}
         env:
           IS_VALIDATION: 'False'
           GITHUB_CONTEXT: ${{ toJson(github) }}
@@ -274,7 +275,7 @@ jobs:
             -e GITHUB_CONTEXT='${{ toJson(github) }}' \
             -e GITHUB_REPOSITORY='${{ github.repository }}' \
             -e GITHUB_AUTH_TOKEN='${{ secrets.AUTH_TOKEN }}' \
-            -e GIT_BRANCH='${{ github.ref_name }}' \
+            -e GIT_BRANCH='${{ needs.detect-and-validate-challenge-branch.outputs.challenge_branch }}' \
             python:3.9-slim \
             bash -c "
               pip install -r github/requirements.txt && 

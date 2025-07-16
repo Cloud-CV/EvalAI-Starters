@@ -165,6 +165,7 @@ jobs:
     needs: [detect-and-validate-challenge-branch, validate-host-config, check-self-hosted-requirements]
     if: |
       always() && 
+      needs.detect-and-validate-challenge-branch.outputs.is_challenge_branch == 'true' &&
       needs.validate-host-config.outputs.is_valid == 'true' &&
       (needs.check-self-hosted-requirements.result == 'success' || needs.check-self-hosted-requirements.result == 'skipped')
     runs-on: ${{ needs.validate-host-config.outputs.requires_self_hosted == 'true' && 'self-hosted' || 'ubuntu-latest' }}
@@ -229,6 +230,7 @@ jobs:
         env:
           IS_VALIDATION: 'True'
           GITHUB_CONTEXT: ${{ toJson(github) }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
 
       - name: Validate challenge configuration (Self-hosted with Docker)
@@ -260,6 +262,7 @@ jobs:
         env:
           IS_VALIDATION: 'False'
           GITHUB_CONTEXT: ${{ toJson(github) }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
 
       - name: Create or update challenge (Self-hosted with Docker)

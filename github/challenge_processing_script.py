@@ -19,7 +19,6 @@ from config import (
     IGNORE_FILES,
     CHALLENGE_ZIP_FILE_PATH,
     GITHUB_EVENT_NAME,
-    VALIDATION_STEP,
 )
 from utils import (
     add_pull_request_comment,
@@ -45,7 +44,10 @@ if not GITHUB_REPOSITORY:
     print("Please ensure your GitHub Actions workflow sets this variable.")
     sys.exit(1)
 print(f"🔍 GITHUB_REPOSITORY from environment: {GITHUB_REPOSITORY}")
-# END of the FIX
+
+VALIDATION_STEP = os.getenv("IS_VALIDATION")
+print(f"🔍 VALIDATION_STEP from IS_VALIDATION: {VALIDATION_STEP}")
+
 
 if not GITHUB_AUTH_TOKEN:
     print(

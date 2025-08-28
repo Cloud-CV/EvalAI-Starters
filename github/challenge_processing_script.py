@@ -182,15 +182,19 @@ if __name__ == "__main__":
     except requests.exceptions.ConnectionError as conn_err:
         # Handle connection errors specifically for localhost
         if is_localhost:
-            error_message = "\n❌ Could not connect to your localhost EvalAI server."
+            print("\nℹ️  Localhost connection error detected. Skipping GitHub issue creation.")
+            if not runner_info['is_self_hosted']:
+                print("   This is expected when using GitHub-hosted runners with localhost URLs.")
+                print("   Please configure a self-hosted runner for local development.")
+            else:
+                print("   This is expected when your local EvalAI server isn't running.")
+            sys.exit(1)
         else:
             error_message = f"\nConnection failed to EvalAI server: {conn_err}"
-        
-        print(error_message)
-        os.environ["CHALLENGE_ERRORS"] = error_message
-
-        # Fail the job so CI visibly reports the problem
-        sys.exit(1)
+            print(error_message)
+            os.environ["CHALLENGE_ERRORS"] = error_message
+            # Fail the job so CI visibly reports the problem
+            sys.exit(1)
 
     except requests.exceptions.HTTPError as err:
         if response.status_code in EVALAI_ERROR_CODES:
@@ -249,12 +253,20 @@ if __name__ == "__main__":
         )
         
         if is_localhost_connection_error or is_github_hosted_localhost_error:
-            # Fail the job so CI visibly reports the problem
+            print("\nℹ️  Localhost connection error detected. Skipping GitHub issue creation.")
+            if is_github_hosted_localhost_error:
+                print("   This is expected when using GitHub-hosted runners with localhost URLs.")
+                print("   Please configure a self-hosted runner for local development.")
+            else:
+                print("   This is expected when your local EvalAI server isn't running.")
             sys.exit(1)
 
         elif VALIDATION_STEP == "True" and check_if_pull_request():
             pr_number = GITHUB_CONTEXT.get("event", {}).get("number")
-            if pr_number:
+            if not pr_number:
+                print("⚠️  Warning: Could not get PR number from GITHUB_CONTEXT")
+                print("   Skipping pull request comment creation")
+            else:
                 add_pull_request_comment(
                     GITHUB_AUTH_TOKEN,
                     os.path.basename(GITHUB_REPOSITORY),
@@ -274,4 +286,4 @@ if __name__ == "__main__":
             )
             sys.exit(1)
 
-    print("Exiting the {} script after success".format(os.path.basename(__file__)))
+    print("\nExiting the {} script after success\n".format(os.path.basename(__file__)))

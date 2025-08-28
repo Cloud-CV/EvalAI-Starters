@@ -2,6 +2,8 @@
 
 If you are looking for a simple challenge configuration that you can replicate to create a challenge on EvalAI, then you are at the right place. Follow the instructions given below to get started.
 
+> Note: EvalAI supports a sync between the Challenge UI and your GitHub repository. When you update challenge details in the EvalAI UI, changes are pushed to your repo (configured branch, typically `challenge`). When you push updates to the repo, the provided workflow validates and (re)processes the challenge on EvalAI. Ensure your challenge is configured with `github_repository`, `github_branch` (e.g., `challenge`), and `github_token`.
+
 ## Directory Structure
 
 ```

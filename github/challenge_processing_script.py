@@ -17,12 +17,15 @@ from utils import (
     get_request_header,
     load_host_configs,
     validate_token,
+    check_sync_status,
+    is_localhost_url,
 )
 
 sys.dont_write_bytecode = True
 
+# GitHub token from repository secrets (used for GitHub API operations like creating issues, PR comments)
 GITHUB_CONTEXT = json.loads(os.getenv("GITHUB_CONTEXT", "{}"))
-GITHUB_AUTH_TOKEN = os.getenv("GITHUB_AUTH_TOKEN")
+GITHUB_AUTH_TOKEN = os.getenv("GITHUB_AUTH_TOKEN")  # This comes from AUTH_TOKEN repository secret
 if not GITHUB_AUTH_TOKEN:
     print(
         "Please add your github access token to the repository secrets with the name AUTH_TOKEN"
@@ -31,20 +34,20 @@ if not GITHUB_AUTH_TOKEN:
 
 # Clean up the GitHub token (remove any whitespace/newlines)
 GITHUB_AUTH_TOKEN = GITHUB_AUTH_TOKEN.strip()
-HOST_AUTH_TOKEN = None
-CHALLENGE_HOST_TEAM_PK = None
-EVALAI_HOST_URL = None
+
+# EvalAI configuration
+HOST_AUTH_TOKEN = None      # EvalAI user authentication token
+CHALLENGE_HOST_TEAM_PK = None  # EvalAI team ID
+EVALAI_HOST_URL = None      # EvalAI server URL
+
+# Fallback for GITHUB_BRANCH if not imported from config
+if 'GITHUB_BRANCH' not in globals():
+    GITHUB_BRANCH = os.getenv("GITHUB_REF_NAME") or os.getenv("GITHUB_BRANCH") or os.getenv("GITHUB_REF", "refs/heads/challenge").replace("refs/heads/", "") or "challenge"
 
 
 def is_localhost_url(url):
     """
     Check if the provided URL is a localhost URL
-    
-    Arguments:
-        url {str}: The URL to check
-    
-    Returns:
-        bool: True if it's a localhost URL, False otherwise
     """
     localhost_indicators = [
         "127.0.0.1",
@@ -69,11 +72,40 @@ def configure_requests_for_localhost():
     """
     # Disable SSL warnings for localhost development
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    print("INFO: SSL verification disabled for localhost development server")
+
+
+def test_github_access(github_token, repository):
+    """
+    Tests GitHub repository access to verify token permissions
+    """
+    try:
+        from github import Github
+        client = Github(github_token)
+        client.get_repo(repository)
+        return True
+    except Exception:
+        return False
+
+
+def setup_one_way_sync():
+    """
+    Sets up one-way sync from EvalAI to GitHub
+    """
+    # Test GitHub repository access
+    github_access = test_github_access(GITHUB_AUTH_TOKEN, GITHUB_REPOSITORY)
+    
+    if github_access:
+        return True
+    else:
+        print(f"❌ GitHub repository access failed! Ensure your token has access to {GITHUB_REPOSITORY}.")
+        return False
 
 
 if __name__ == "__main__":
-    
+    if GITHUB_CONTEXT.get("event", {}).get("head_commit", {}).get("message", "").startswith("evalai_bot"):
+        print("Sync from Evalai")
+        sys.exit(0)
+
     configs = load_host_configs(HOST_CONFIG_FILE_PATH)
     if configs:
         HOST_AUTH_TOKEN = configs[0]
@@ -86,99 +118,101 @@ if __name__ == "__main__":
     is_localhost = is_localhost_url(EVALAI_HOST_URL)
     runner_info = get_runner_info()
     
-    print(f"\n🌐 EvalAI Server: {EVALAI_HOST_URL}")
-    print(f"🏠 Localhost Mode: {is_localhost}")
-    print(f"🤖 Self-hosted Runner: {runner_info['is_self_hosted']}")
-    
     if is_localhost:
         configure_requests_for_localhost()
-        print(f"INFO: Using localhost server: {EVALAI_HOST_URL}")
+        
+    # Setup one-way sync configuration
+    if GITHUB_AUTH_TOKEN:
+        setup_one_way_sync()
+    else:
+        print("ℹ️  One-way sync not configured. Add AUTH_TOKEN to repository secrets.")
         
     # Fetching the url
     if VALIDATION_STEP == "True":
-        print(f"\n🔍 VALIDATION MODE: Validating challenge configuration...")
         url = "{}{}".format(
             EVALAI_HOST_URL,
             CHALLENGE_CONFIG_VALIDATION_URL.format(CHALLENGE_HOST_TEAM_PK),
         )
     else:
-        print(f"\n🚀 CREATION MODE: Creating/updating challenge...")
         url = "{}{}".format(
             EVALAI_HOST_URL,
             CHALLENGE_CREATE_OR_UPDATE_URL.format(CHALLENGE_HOST_TEAM_PK),
         )
 
-    print(f"📡 API Endpoint: {url}")
-    
     headers = get_request_header(HOST_AUTH_TOKEN)
 
     # Creating the challenge zip file and storing in a dict to send to EvalAI
-    print(f"\n📦 Creating challenge configuration package...")
     create_challenge_zip_file(CHALLENGE_ZIP_FILE_PATH, IGNORE_DIRS, IGNORE_FILES)
     zip_file = open(CHALLENGE_ZIP_FILE_PATH, "rb")
     file = {"zip_configuration": zip_file}
 
-    data = {"GITHUB_REPOSITORY": GITHUB_REPOSITORY}
+    data = {
+        "GITHUB_REPOSITORY": GITHUB_REPOSITORY,
+        "GITHUB_AUTH_TOKEN": GITHUB_AUTH_TOKEN,
+        "GITHUB_BRANCH" : GITHUB_BRANCH
+    }
+    
+    # Add GitHub token for one-way sync if available
+    if GITHUB_AUTH_TOKEN:
+        data["GITHUB_TOKEN"] = GITHUB_AUTH_TOKEN
 
     # Configure SSL verification based on whether we're using localhost
     verify_ssl = not is_localhost
-    print(f"🔒 SSL Verification: {'Disabled (localhost)' if not verify_ssl else 'Enabled'}")
 
     try:
-        print(f"\n🌐 Sending request to EvalAI server...")
         response = requests.post(url, data=data, headers=headers, files=file, verify=verify_ssl)
 
         if response.status_code != http.HTTPStatus.OK and response.status_code != http.HTTPStatus.CREATED:
             response.raise_for_status()
         else:
-            print("\n✅ Challenge processed successfully on EvalAI")
+            print("✅ Challenge processed successfully on EvalAI")
+            
+            # If this was a challenge creation/update, try to get the challenge ID for sync status
+            if VALIDATION_STEP != "True" and GITHUB_AUTH_TOKEN:
+                try:
+                    response_data = response.json()
+                    if "id" in response_data:
+                        challenge_id = response_data["id"]
+                        sync_status = check_sync_status(EVALAI_HOST_URL, challenge_id, HOST_AUTH_TOKEN)
+                        if sync_status:
+                            print("✅ Sync status retrieved")
+                except Exception:
+                    pass
             
     except requests.exceptions.ConnectionError as conn_err:
         # Handle connection errors specifically for localhost
         if is_localhost:
-            error_message = "\n🚨 LOCALHOST SERVER CONNECTION FAILED\n"
-            error_message += f"❌ Could not connect to your localhost EvalAI server at: {EVALAI_HOST_URL}\n"
-            error_message += "\n📋 Please check the following:\n"
-            error_message += "   1. Is your EvalAI server running?\n"
-            error_message += f"   2. Is it accessible at {EVALAI_HOST_URL}?\n"
-            error_message += "   3. Check server logs for any startup errors\n"
-            
-            if runner_info['is_self_hosted']:
-                error_message += "\n💡 Self-hosted runner troubleshooting:\n"
-                error_message += "   • Verify runner can reach the server: ping/curl test\n"
-                error_message += "   • Check network configuration and firewall settings\n"
-                error_message += "   • Ensure server is binding to correct interface (0.0.0.0 vs 127.0.0.1)\n"
+            print("\nℹ️  Localhost connection error detected. Skipping GitHub issue creation.")
+            if not runner_info['is_self_hosted']:
+                print("   This is expected when using GitHub-hosted runners with localhost URLs.")
+                print("   Please configure a self-hosted runner for local development.")
             else:
-                error_message += "\n⚠️  CONFIGURATION ISSUE:\n"
-                error_message += "   You're using a GitHub-hosted runner with a localhost URL.\n"
-                error_message += "   GitHub-hosted runners cannot access your local machine.\n"
-                error_message += "   Please set up a self-hosted runner for localhost development.\n"
-                
-            error_message += "\n💡 To start your local server, typically run:\n"
-            error_message += "   python manage.py runserver 0.0.0.0:8888\n"
-            error_message += f"\nOriginal error: {conn_err}"
+                print("   This is expected when your local EvalAI server isn't running.")
+            sys.exit(1)
         else:
             error_message = f"\nConnection failed to EvalAI server: {conn_err}"
-        
-        print(error_message)
-        os.environ["CHALLENGE_ERRORS"] = error_message
-
-        # Fail the job so CI visibly reports the problem
-        sys.exit(1)
+            print(error_message)
+            os.environ["CHALLENGE_ERRORS"] = error_message
+            # Fail the job so CI visibly reports the problem
+            sys.exit(1)
 
     except requests.exceptions.HTTPError as err:
         if response.status_code in EVALAI_ERROR_CODES:
             is_token_valid = validate_token(response.json())
             if is_token_valid:
-                error = response.json()["error"]
-                error_message = "\nFollowing errors occurred while validating the challenge config:\n{}".format(
+                error = response.json().get("error", str(err))
+                error_message = "\nErrors occurred while validating the challenge config:\n{}".format(
                     error
                 )
                 print(error_message)
                 os.environ["CHALLENGE_ERRORS"] = error_message
+        elif response.status_code == 404:
+            error_message = "\n404 Not Found: API endpoint not found"
+            print(error_message)
+            os.environ["CHALLENGE_ERRORS"] = error_message
         else:
             print(
-                "\nFollowing errors occurred while validating the challenge config: {}".format(
+                "\nErrors occurred while validating the challenge config: {}".format(
                     err
                 )
             )
@@ -186,13 +220,13 @@ if __name__ == "__main__":
 
     except Exception as e:
         if VALIDATION_STEP == "True":
-            error_message = "\nFollowing errors occurred while validating the challenge config: {}".format(
+            error_message = "\nErrors occurred while validating the challenge config: {}".format(
                 e
             )
             print(error_message)
             os.environ["CHALLENGE_ERRORS"] = error_message
         else:
-            error_message = "\nFollowing errors occurred while processing the challenge config: {}".format(
+            error_message = "\nErrors occurred while processing the challenge config: {}".format(
                 e
             )
             print(error_message)
@@ -225,8 +259,6 @@ if __name__ == "__main__":
                 print("   Please configure a self-hosted runner for local development.")
             else:
                 print("   This is expected when your local EvalAI server isn't running.")
-                
-            # Fail the job so CI visibly reports the problem
             sys.exit(1)
 
         elif VALIDATION_STEP == "True" and check_if_pull_request():
@@ -243,7 +275,7 @@ if __name__ == "__main__":
                 )
         else:
             issue_title = (
-                "Following errors occurred while validating the challenge config:"
+                "Errors occurred while validating the challenge config:"
             )
             repo_name = os.path.basename(GITHUB_REPOSITORY) if GITHUB_REPOSITORY else ""
             create_github_repository_issue(
@@ -252,11 +284,6 @@ if __name__ == "__main__":
                 issue_title,
                 errors,
             )
-            print(
-                    "\nExiting the {} script after failure\n".format(
-                        os.path.basename(__file__)
-                    )
-                )
             sys.exit(1)
 
     print("\nExiting the {} script after success\n".format(os.path.basename(__file__)))

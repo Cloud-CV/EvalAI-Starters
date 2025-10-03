@@ -10,7 +10,7 @@ If you are looking for a simple challenge configuration that you can replicate t
 ├── annotations                                 # Contains the annotations for Dataset splits
 │   ├── test_annotations_devsplit.json          # Annotations of dev split
 │   └── test_annotations_testsplit.json         # Annotations for test split
-├── challenge_data                              # Contains scripts to test the evalautaion script locally
+├── challenge_data                              # Contains scripts to test the evaluation script locally
 │   ├── challenge_1                             # Contains evaluation script for the challenge
 |        ├── __init__.py                        # Imports the main.py file for evaluation
 |        └── main.py                            # Challenge evaluation script
@@ -21,16 +21,15 @@ If you are looking for a simple challenge configuration that you can replicate t
 │   └── main.py                                 # Contains the main `evaluate()` method
 ├── logo.jpg                                    # Logo image of the challenge
 ├── submission.json                             # Sample submission file
-├── run.sh                                      # Script to create the challenge configuration zip to be uploaded on EvalAI website
 └── templates                                   # Contains challenge related HTML templates
     ├── challenge_phase_1_description.html      # Challenge Phase 1 description template
     ├── challenge_phase_2_description.html      # Challenge Phase 2 description template
     ├── description.html                        # Challenge description template
-    ├── evaluation_details.html                 # Contains description about how submissions will be evalauted for each challenge phase
+    ├── evaluation_details.html                 # Contains description about how submissions will be evaluated for each challenge phase
     ├── submission_guidelines.html              # Contains information about how to make submissions to the challenge
     └── terms_and_conditions.html               # Contains terms and conditions related to the challenge
 ├── worker                                      # Contains the scripts to test evaluation script locally
-│   ├── __init__.py                             # Imports the module that ionvolves loading evaluation script
+│   ├── __init__.py                             # Imports the module that involves loading evaluation script
 │   └── run.py                                  # Contains the code to run the evaluation locally
 ```
 
@@ -38,9 +37,9 @@ If you are looking for a simple challenge configuration that you can replicate t
 
 1. Use this repository as [template](https://docs.github.com/en/free-pro-team@latest/github/creating-cloning-and-archiving-repositories/creating-a-repository-from-a-template).
 
-2. Generate your [github personal acccess token](https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/creating-a-personal-access-token) and copy it in clipboard.
+2. Generate your [github personal access token](https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/creating-a-personal-access-token) and copy it in the clipboard.
 
-3. Add the github personal access token in the forked repository's [secrets](https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#creating-encrypted-secrets-for-a-repository) with the name `AUTH_TOKEN`.
+3. Add the GitHub personal access token in the forked repository's [secrets](https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#creating-encrypted-secrets-for-a-repository) with the name `AUTH_TOKEN`.
 
 4. Now, go to [EvalAI](https://eval.ai) to fetch the following details -
    1. `evalai_user_auth_token` - Go to [profile page](https://eval.ai/web/profile) after logging in and click on `Get your Auth Token` to copy your auth token.
@@ -56,11 +55,14 @@ If you are looking for a simple challenge configuration that you can replicate t
 
 8. Commit the changes and push the `challenge` branch in the repository and wait for the build to complete. View the [logs of your build](https://docs.github.com/en/free-pro-team@latest/actions/managing-workflow-runs/using-workflow-run-logs#viewing-logs-to-diagnose-failures).
 
-9. If challenge config contains errors then a `issue` will be opened automatically in the repository with the errors otherwise the challenge will be created on EvalAI.
+9. If challenge config contains errors then an `issue` will be opened automatically in the repository with the errors otherwise the challenge will be created on EvalAI.
 
 10. Go to [Hosted Challenges](https://eval.ai/web/hosted-challenges) to view your challenge. The challenge will be publicly available once EvalAI admin approves the challenge.
 
 11. To update the challenge on EvalAI, make changes in the repository and push on `challenge` branch and wait for the build to complete.
+
+## Add custom dependencies for evaluation (Optional)
+To add custom dependency packages in the evaluation script, refer to [this guide](./evaluation_script/dependency-installation.md).
 
 ## Test your evaluation script locally
 
@@ -71,6 +73,57 @@ In order to test the evaluation script locally before uploading it to [EvalAI](h
 2. Now, edit `challenge_phase` name, `annotation file` name and `submission file` name in the `worker/run.py` file to the challenge phase codename (which you want to test for), annotation file name in the `annotations/` folder (for specific phase) and corresponding submission file respectively.
 
 3. Run the command `python -m worker.run` from the directory where `annotations/` `challenge_data/` and `worker/` directories are present. If the command runs successfully, then the evaluation script works locally and will work on the server as well.
+
+## Local Development with a Self-Hosted Runner
+
+> Use this when you want to test everything against a **local EvalAI server** before pushing to the real site.
+
+1. **Spin up EvalAI locally**
+
+   ```bash
+   cd <path-to-EvalAI>
+   docker-compose up --build   # --build only the first time or after code changes
+   ```
+
+   *Backend API → `http://localhost:8000`, Frontend → `http://localhost:8888`.*
+
+2. **Register a self-hosted runner**
+
+   1. Repo → *Settings ▸ Actions ▸ Runners ▸ New self-hosted runner*.
+   2. Select your architecture and paste the commands shown to install packages and configure your runners for your local machine
+   3. If you want to reconfigure a pre-existing runner for a new repository :
+      1. Go to *Runners ▸ open menu ▸ Remove runner* , then paste the command shown in your local terminal to detach.
+      2. Then follow steps 1 and 2 for configuring runner for new repository.
+
+3. **Point `host_config.json` to localhost**
+
+   ```jsonc
+   {
+     "token": "<your_local_evalai_auth_token>",
+     "team_pk": "<your_local_team_pk>",
+     "evalai_host_url": "http://host.docker.internal:8000"
+   }
+   ```
+   *host.docker.internal* : Docker's built-in hostname that points to the Docker host (your machine).
+   *8000* : Port where Backend API for the EvalAI server used to create challenges runs.
+
+
+
+5. **Create (or switch to) the `challenge` branch locally**
+   Commit your config / template / script changes here , as you would when creating a challenge using Github.
+
+6. **Verify the result**
+   Go to [Hosted Challenges](http://127.0.0.1:8888/web/hosted-challenges) on your local server and confirm your challenge appears and renders correctly.
+
+---
+## Important Note
+`host_config.json` file includes default placeholders like:
+
+- `<evalai_user_auth_token>`
+- `<host_team_pk>`
+- `<evalai_host_url>`
+
+Please replace them with real values before pushing changes to avoid build errors.
 
 ## Facing problems in creating a challenge?
 

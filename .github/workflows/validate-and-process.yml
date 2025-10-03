@@ -1,0 +1,239 @@
+name: Validate and Process EvalAI Challenge
+
+on:
+  push:
+    branches:
+      - challenge
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  validate-host-config:
+    runs-on: ubuntu-latest
+    outputs:
+      is_valid: ${{ steps.validate.outputs.is_valid }}
+      is_localhost: ${{ steps.validate.outputs.is_localhost }}
+      host_url: ${{ steps.validate.outputs.host_url }}
+      requires_self_hosted: ${{ steps.validate.outputs.requires_self_hosted }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Validate host_config.json
+        id: validate
+        run: |
+          echo "is_valid=true" >> $GITHUB_OUTPUT
+          echo "is_localhost=false" >> $GITHUB_OUTPUT
+          echo "requires_self_hosted=false" >> $GITHUB_OUTPUT
+          echo "" > validation_error.log
+
+          if ! [ -f "github/host_config.json" ]; then
+            echo "❌ host_config.json not found in github/ directory" | tee -a validation_error.log
+            echo "is_valid=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          TOKEN=$(jq -r '.token' github/host_config.json)
+          TEAM_PK=$(jq -r '.team_pk' github/host_config.json)
+          HOST_URL=$(jq -r '.evalai_host_url' github/host_config.json)
+
+          echo "host_url=$HOST_URL" >> $GITHUB_OUTPUT
+
+          # Enhanced localhost detection (includes Docker networking hosts)
+          if [[ "$HOST_URL" == *"127.0.0.1"* ]] || [[ "$HOST_URL" == *"localhost"* ]] || [[ "$HOST_URL" == *"0.0.0.0"* ]] || [[ "$HOST_URL" == *"host.docker.internal"* ]]; then
+            echo "is_localhost=true" >> $GITHUB_OUTPUT
+            echo "requires_self_hosted=true" >> $GITHUB_OUTPUT
+            echo "🏠 Localhost/Docker networking server detected: $HOST_URL"
+            echo "🤖 Self-hosted runner required for local development"
+            echo "🐳 Docker networking will be used for container-to-host communication"
+            echo ""
+            echo "📋 Requirements: self-hosted runner + running local EvalAI server"
+            echo "⚠️  Note: GitHub hosted runners cannot connect to localhost"
+            echo "⚠️  This workflow will use your self-hosted runner instead"
+          fi
+
+          # Validate required fields
+          if [[ -z "$TOKEN" || "$TOKEN" == "<evalai_user_auth_token>" ]]; then
+            echo "❌ Invalid or missing token" | tee -a validation_error.log
+            echo "is_valid=false" >> $GITHUB_OUTPUT
+          fi
+
+          if [[ -z "$TEAM_PK" || "$TEAM_PK" == "<host_team_pk>" ]]; then
+            echo "❌ Invalid or missing team_pk" | tee -a validation_error.log
+            echo "is_valid=false" >> $GITHUB_OUTPUT
+          fi
+
+          if [[ -z "$HOST_URL" || "$HOST_URL" == "<evalai_host_url>" ]]; then
+            echo "❌ Invalid or missing evalai_host_url" | tee -a validation_error.log
+            echo "is_valid=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create issue if invalid
+        if: steps.validate.outputs.is_valid == 'false'
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: "host_config.json validation failed"
+          content-filepath: validation_error.log
+          labels: |
+            bug
+            config
+            self-hosted
+
+      - name: Fail job if invalid
+        if: steps.validate.outputs.is_valid == 'false'
+        run: |
+          echo "❌ host_config.json validation failed. See issue for details."
+          exit 1
+
+  check-self-hosted-requirements:
+    needs: validate-host-config
+    if: needs.validate-host-config.outputs.requires_self_hosted == 'true'
+    runs-on: self-hosted
+    steps:
+      - name: Self-hosted runner requirements check
+        run: |
+          echo "🏠 LOCAL DEVELOPMENT MODE DETECTED"
+          echo "=================================="
+          echo ""
+          # Check 1: Verify Docker is available
+          if ! docker info > /dev/null 2>&1; then
+            echo "❌ Docker is not available or not running on this self-hosted runner"
+            exit 1
+          else
+            echo "✅ Docker is available"
+          fi
+
+          # Check 2: Test Docker Hub connectivity
+          if ! curl -s --connect-timeout 5 https://hub.docker.com > /dev/null; then
+            echo "⚠️  Warning: Cannot reach Docker Hub (network issue?)"
+          else
+            echo "✅ Docker Hub is accessible"
+          fi
+
+          echo ""
+          echo "📋 Next job will run on this self-hosted runner and verify:"
+          echo "   • Docker engine is running"
+          echo "   • Can pull python:3.9-slim image"
+          echo "   • EvalAI server connectivity"
+
+
+  process-evalai-challenge:
+    needs: [validate-host-config, check-self-hosted-requirements]
+    if: |
+      always() && 
+      needs.validate-host-config.outputs.is_valid == 'true' &&
+      (needs.check-self-hosted-requirements.result == 'success' || needs.check-self-hosted-requirements.result == 'skipped')
+    runs-on: ${{ needs.validate-host-config.outputs.requires_self_hosted == 'true' && 'self-hosted' || 'ubuntu-latest' }}
+    
+    steps:
+      - name: Checkout challenge branch
+        uses: actions/checkout@v3
+        with:
+          ref: challenge
+
+      - name: Set up Python (GitHub-hosted only)
+        if: needs.validate-host-config.outputs.requires_self_hosted != 'true'
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9.21
+
+      - name: Prepare Docker environment (Self-hosted only)
+        if: needs.validate-host-config.outputs.requires_self_hosted == 'true'
+        run: |
+          echo "🐳 PREPARING DOCKER ENVIRONMENT"
+          echo "==============================="
+          echo "Pulling Python 3.9 Docker image..."
+          docker pull python:3.9-slim
+          echo "✅ Docker image ready"
+
+      - name: Install dependencies (GitHub-hosted)
+        if: needs.validate-host-config.outputs.requires_self_hosted != 'true'
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f github/requirements.txt ]; then 
+            echo "📦 Installing dependencies from github/requirements.txt"
+            pip install -r github/requirements.txt
+          else
+            echo "⚠️  No requirements.txt found in github/ directory"
+          fi
+
+      - name: Install dependencies (Self-hosted with Docker)
+        if: needs.validate-host-config.outputs.requires_self_hosted == 'true'
+        run: |
+          echo "📦 Installing dependencies in Docker container"
+          docker run --rm \
+            --add-host host.docker.internal:host-gateway \
+            -v "$(pwd):/workspace" \
+            -w /workspace \
+            python:3.9-slim bash -c "
+            pip install --upgrade pip
+            if [ -f github/requirements.txt ]; then 
+              echo '📦 Installing dependencies from github/requirements.txt'
+              pip install -r github/requirements.txt
+            else
+              echo '⚠️  No requirements.txt found in github/ directory'
+            fi
+          "
+          echo "✅ Dependencies installed in Docker"
+
+      - name: Validate challenge configuration (GitHub-hosted)
+        if: needs.validate-host-config.outputs.requires_self_hosted != 'true'
+        run: |
+          echo "🔍 VALIDATING CHALLENGE CONFIGURATION"
+          echo "====================================="
+          python3 github/challenge_processing_script.py
+        env:
+          IS_VALIDATION: 'True'
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+          GITHUB_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+
+      - name: Validate challenge configuration (Self-hosted with Docker)
+        if: needs.validate-host-config.outputs.requires_self_hosted == 'true'
+        run: |
+          echo "🔍 VALIDATING CHALLENGE CONFIGURATION (Docker)"
+          echo "==============================================="
+          docker run --rm \
+            --add-host host.docker.internal:host-gateway \
+            -v "$(pwd):/workspace" \
+            -w /workspace \
+            -e IS_VALIDATION='True' \
+            -e GITHUB_CONTEXT='${{ toJson(github) }}' \
+            -e GITHUB_REPOSITORY='${{ github.repository }}' \
+            -e GITHUB_AUTH_TOKEN='${{ secrets.AUTH_TOKEN }}' \
+            python:3.9-slim \
+            bash -c "
+              pip install -r github/requirements.txt && 
+              python3 github/challenge_processing_script.py
+            "
+
+      - name: Create or update challenge (GitHub-hosted)
+        if: success() && needs.validate-host-config.outputs.requires_self_hosted != 'true'
+        run: |
+          echo "🚀 CREATING/UPDATING CHALLENGE"
+          echo "=============================="
+          python3 github/challenge_processing_script.py
+        env:
+          IS_VALIDATION: 'False'
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+          GITHUB_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+
+      - name: Create or update challenge (Self-hosted with Docker)
+        if: success() && needs.validate-host-config.outputs.requires_self_hosted == 'true'
+        run: |
+          echo "🚀 CREATING/UPDATING CHALLENGE (Docker)"
+          echo "========================================"
+          docker run --rm \
+            --add-host host.docker.internal:host-gateway \
+            -v "$(pwd):/workspace" \
+            -w /workspace \
+            -e IS_VALIDATION='False' \
+            -e GITHUB_CONTEXT='${{ toJson(github) }}' \
+            -e GITHUB_REPOSITORY='${{ github.repository }}' \
+            -e GITHUB_AUTH_TOKEN='${{ secrets.AUTH_TOKEN }}' \
+            python:3.9-slim \
+            bash -c "
+              pip install -r github/requirements.txt && 
+              python3 github/challenge_processing_script.py
+            "

@@ -10,7 +10,7 @@ If you are looking for a simple challenge configuration that you can replicate t
 ├── annotations                                 # Contains the annotations for Dataset splits
 │   ├── test_annotations_devsplit.json          # Annotations of dev split
 │   └── test_annotations_testsplit.json         # Annotations for test split
-├── challenge_data                              # Contains scripts to test the evalautaion script locally
+├── challenge_data                              # Contains scripts to test the evaluation script locally
 │   ├── challenge_1                             # Contains evaluation script for the challenge
 |        ├── __init__.py                        # Imports the main.py file for evaluation
 |        └── main.py                            # Challenge evaluation script
@@ -25,11 +25,11 @@ If you are looking for a simple challenge configuration that you can replicate t
     ├── challenge_phase_1_description.html      # Challenge Phase 1 description template
     ├── challenge_phase_2_description.html      # Challenge Phase 2 description template
     ├── description.html                        # Challenge description template
-    ├── evaluation_details.html                 # Contains description about how submissions will be evalauted for each challenge phase
+    ├── evaluation_details.html                 # Contains description about how submissions will be evaluated for each challenge phase
     ├── submission_guidelines.html              # Contains information about how to make submissions to the challenge
     └── terms_and_conditions.html               # Contains terms and conditions related to the challenge
 ├── worker                                      # Contains the scripts to test evaluation script locally
-│   ├── __init__.py                             # Imports the module that ionvolves loading evaluation script
+│   ├── __init__.py                             # Imports the module that involves loading evaluation script
 │   └── run.py                                  # Contains the code to run the evaluation locally
 ```
 
@@ -37,9 +37,9 @@ If you are looking for a simple challenge configuration that you can replicate t
 
 1. Use this repository as [template](https://docs.github.com/en/free-pro-team@latest/github/creating-cloning-and-archiving-repositories/creating-a-repository-from-a-template).
 
-2. Generate your [github personal acccess token](https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/creating-a-personal-access-token) and copy it in clipboard.
+2. Generate your [github personal access token](https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/creating-a-personal-access-token) and copy it in the clipboard.
 
-3. Add the github personal access token in the forked repository's [secrets](https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#creating-encrypted-secrets-for-a-repository) with the name `AUTH_TOKEN`.
+3. Add the GitHub personal access token in the forked repository's [secrets](https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#creating-encrypted-secrets-for-a-repository) with the name `AUTH_TOKEN`.
 
 4. Now, go to [EvalAI](https://eval.ai) to fetch the following details -
    1. `evalai_user_auth_token` - Go to [profile page](https://eval.ai/web/profile) after logging in and click on `Get your Auth Token` to copy your auth token.
@@ -55,7 +55,7 @@ If you are looking for a simple challenge configuration that you can replicate t
 
 8. Commit the changes and push the `challenge` branch in the repository and wait for the build to complete. View the [logs of your build](https://docs.github.com/en/free-pro-team@latest/actions/managing-workflow-runs/using-workflow-run-logs#viewing-logs-to-diagnose-failures).
 
-9. If challenge config contains errors then a `issue` will be opened automatically in the repository with the errors otherwise the challenge will be created on EvalAI.
+9. If challenge config contains errors then an `issue` will be opened automatically in the repository with the errors otherwise the challenge will be created on EvalAI.
 
 10. Go to [Hosted Challenges](https://eval.ai/web/hosted-challenges) to view your challenge. The challenge will be publicly available once EvalAI admin approves the challenge.
 

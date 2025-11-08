@@ -125,6 +125,10 @@ In order to test the evaluation script locally before uploading it to [EvalAI](h
 
 Please replace them with real values before pushing changes to avoid build errors.
 
+
+EvalAI supports a sync between the Challenge UI and your GitHub repository. When you update challenge details in the EvalAI UI, changes are pushed to your repo (configured branch, typically `challenge`). When you push updates to the repo, the provided workflow validates and (re)processes the challenge on EvalAI. 
+
+
 ## Facing problems in creating a challenge?
 
 Please feel free to open issues on our [GitHub Repository](https://github.com/Cloud-CV/EvalAI-Starter/issues) or contact us at team@cloudcv.org if you have issues.

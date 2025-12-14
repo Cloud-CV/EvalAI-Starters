@@ -167,10 +167,36 @@ if __name__ == "__main__":
         sys.exit(1)
 
     except requests.exceptions.HTTPError as err:
-        if response.status_code in EVALAI_ERROR_CODES:
-            is_token_valid = validate_token(response.json())
+        status = getattr(response, "status_code", None)
+        try:
+            payload = response.json()
+        except ValueError:
+            payload = None
+
+        # Handle authentication/authorization failures explicitly
+        if status == 401:
+            error_message = "\n🚫 AUTHENTICATION FAILED (HTTP 401): Your EvalAI host token may be invalid or expired.\n"
+            error_message += "🔑 Check your token at Profile -> Auth Token on Eval.ai and generate a new one with 'Refresh Token' if needed.\n"
+            error_message += "🛠️ Update the repository secret used by this Action with the new token and re-run the workflow.\n"
+            if payload and isinstance(payload, dict):
+                server_msg = payload.get("error") or payload.get("detail") or payload.get("message")
+                if server_msg:
+                    error_message += f"\nServer response: {server_msg}"
+            else:
+                error_message += f"\nServer returned status {status}."
+
+            print(error_message)
+            os.environ["CHALLENGE_ERRORS"] = error_message
+            sys.exit(1)
+
+        # For other EvalAI-specific error codes try to extract useful info safely
+        if status in EVALAI_ERROR_CODES:
+            is_token_valid = validate_token(payload)
             if is_token_valid:
-                error = response.json()["error"]
+                if isinstance(payload, dict):
+                    error = payload.get("error") or payload.get("detail") or str(payload)
+                else:
+                    error = str(payload)
                 error_message = "\nFollowing errors occurred while validating the challenge config:\n{}".format(
                     error
                 )

@@ -1,56 +1,64 @@
 """
-# Q. How to install custom python pip packages?
+Vendor-friendly `__init__` for evaluation scripts.
 
-# A. Uncomment the below code to install the custom python packages.
+Goal:
+- Prefer packages that are included inside the repository under
+  `evaluation_script/vendor/` so evaluation does NOT require network access
+  or installs outside the repo.
 
-import os
-import subprocess
+Usage:
+- To include a third-party package, add the package directory or a
+  locally-downloaded wheel into `evaluation_script/vendor/`.
+- Optionally create `evaluation_script/local_requirements.txt` with
+  package names (one per line) to document which packages are expected.
+
+Behavior:
+- If `vendor/` exists it will be prepended to `sys.path` so imports
+  like `from zhipuai import ZhipuAI` will resolve when `zhipuai` is
+  present under `evaluation_script/vendor/`.
+- If packages listed in `local_requirements.txt` are missing from the
+  vendor folder, a warning is printed (no network install is attempted).
+
+This approach ensures all code required for evaluation can live inside
+the repo and avoids modifying the host Python environment.
+"""
+
 import sys
+import importlib.util
 from pathlib import Path
 
-def install(package):
-    # Install a pip python package
+VENDOR_DIR = Path(__file__).parent / "vendor"
 
-    # Args:
-    #     package ([str]): Package name with version
-    try:
-        subprocess.run([sys.executable,"-m","pip","install",package])
-    except subprocess.CalledProcessError as e:
-        print(f"Error occurred while installing {package}: {e.stderr}")
-    except FileNotFoundError:
-        print("Error: Pip is not found. make sure you have pip installed.")
-    except PermissionError:
-        print("Error: Permission denied. ")
+def add_vendor_to_sys_path():
+    if VENDOR_DIR.exists() and str(VENDOR_DIR) not in sys.path:
+        sys.path.insert(0, str(VENDOR_DIR))
+        print(f"[evaluation_script] Added vendor directory to sys.path: {VENDOR_DIR}")
+        return True
+    return False
 
+def is_importable(module_name: str) -> bool:
+    return importlib.util.find_spec(module_name) is not None
 
-def install_local_package(folder_name):
-    # Install a local python package
+def check_local_requirements():
+    req_file = Path(__file__).parent / "local_requirements.txt"
+    missing = []
+    if req_file.exists():
+        for line in req_file.read_text().splitlines():
+            pkg = line.strip()
+            if not pkg or pkg.startswith("#"):
+                continue
+            # only check module base name (before any ==)
+            mod_name = pkg.split("==")[0].strip()
+            if not is_importable(mod_name):
+                missing.append(pkg)
+    return missing
 
-    # Args:
-    #     folder_name ([str]): name of the folder placed in evaluation_script/
-    
-    
-    try:
-        subprocess.run([
-            sys.executable,
-            "-m",
-            "pip",
-            "install",
-            os.path.join(str(Path(__file__).parent.absolute()), folder_name)
-        ], capture_output=True, text=True, check=True)
-        print(f"Successfully installed local package from {folder_name}.")
-    except subprocess.CalledProcessError as e:
-        print(f"Error occurred while installing local package from {folder_name}: {e.stderr}")
-    except FileNotFoundError:
-        print("Error: Pip not found.")
-    except PermissionError:
-        print("Error: Permission denied. ")
+# Add vendor path early so downstream imports can find vendored packages.
+add_vendor_to_sys_path()
 
-install("shapely==1.7.1")
-install("requests==2.25.1")
-
-install_local_package("package_folder_name")
-
-"""
+missing = check_local_requirements()
+if missing:
+    print("[evaluation_script] Warning: The following packages listed in local_requirements.txt were not found in evaluation_script/vendor/:\n  " + "\n  ".join(missing))
+    print("[evaluation_script] To avoid network installs, place package directories or wheels into evaluation_script/vendor/")
 
 from .main import evaluate

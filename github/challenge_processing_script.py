@@ -168,20 +168,28 @@ if __name__ == "__main__":
 
     except requests.exceptions.HTTPError as err:
         if response.status_code in EVALAI_ERROR_CODES:
-            is_token_valid = validate_token(response.json())
-            if is_token_valid:
-                error = response.json()["error"]
-                error_message = "\nFollowing errors occurred while validating the challenge config:\n{}".format(
-                    error
+            # FIX FOR ISSUE #4490 START
+            if response.status_code == http.HTTPStatus.UNAUTHORIZED:
+                error_message = (
+                    "\n🚨 UNAUTHORIZED (401): Your EvalAI Auth Token has expired or is invalid.\n"
+                    "💡 FIX: Please go to your EvalAI Profile -> Auth Token and refresh it."
                 )
                 print(error_message)
                 os.environ["CHALLENGE_ERRORS"] = error_message
+            else:
+                is_token_valid = validate_token(response.json())
+                if is_token_valid:
+                    # Use .get() to prevent KeyError if 'error' key is missing
+                    error = response.json().get("error", "An unknown error occurred on the server.")
+                    error_message = "\nFollowing errors occurred while validating the challenge config:\n{}".format(
+                        error
+                    )
+                    print(error_message)
+                    os.environ["CHALLENGE_ERRORS"] = error_message
+            # FIX FOR ISSUE #4490 END
         else:
-            print(
-                "\nFollowing errors occurred while validating the challenge config: {}".format(
-                    err
-                )
-            )
+            error_message = "\nFollowing errors occurred while validating the challenge config: {}".format(err)
+            print(error_message)
             os.environ["CHALLENGE_ERRORS"] = str(err)
 
     except Exception as e:

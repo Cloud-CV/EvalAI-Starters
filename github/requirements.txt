@@ -1,2 +1,2 @@
 PyGithub===1.53
-requests==2.32.4
+requests==2.33.0
